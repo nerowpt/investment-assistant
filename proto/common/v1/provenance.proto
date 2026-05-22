@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+// 公共消息：数据来源三元组（对齐 03 §4.6 / 02 tier 确认）
+package common.v1;
+
+option go_package = "github.com/investment-assistant/proto/common/v1;commonv1";
+
+// 数据来源与可信度（source / tier / timestamp）
+message Provenance {
+  string source = 1;       // 来源名称，如 akshare、manual_upload
+  string tier = 2;         // 信息可信度：S | A | B | C | D
+  string captured_at = 3;  // 采集或发布时间，ISO8601
+  string url = 4;          // 可选：原文链接
+}
+
+// 标的引用（A 股 6 位代码）
+message StockRef {
+  string code = 1; // 股票代码，如 002624
+  string name = 2; // 标的名称
+}

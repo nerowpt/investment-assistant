@@ -1,0 +1,78 @@
+---
+description: 本仓库代码、proto、配置与架构文档须使用中文注释；与 karpathy-guidelines 一并适用。
+alwaysApply: true
+---
+
+# 中文注释规范
+
+本仓库（investment-assistant）**默认使用简体中文**编写注释与面向开发者的说明文字。
+
+## 适用范围
+
+| 类型 | 要求 |
+|---|---|
+| **Go** | 导出符号须有中文 `//` 注释；复杂逻辑块用中文说明意图 |
+| **Go 结构体** | 与 03 YAML/SQLite schema 对齐的类型：**每个字段**行尾或行上中文注释（业务含义 + 可选文档章节） |
+| **Go 未导出函数** | 非 trivial 的 `func xxx()` **必须**有中文注释，说明职责与对齐的 doctor/用例规则 |
+| **Python** | 模块 docstring、类/函数说明用中文；类型 hint 保留英文 |
+| **Protobuf** | 每个 `service`/`rpc`/`message`/重要字段用中文 `//` 注释 |
+| **SQL 迁移** | 表/列 COMMENT 或迁移文件头部用中文说明用途 |
+| **配置 example** | 关键字段中文注释（已有惯例） |
+| **架构文档 `docs/`** | 正文中文；专有名词可保留英文（Kratos、gRPC、MCP） |
+
+## 不要求中文的部分
+
+- 用户可见 CLI **输出**：可中英混合，MVP-1 以中文为主
+- **标识符**：包名、函数名、JSON 字段名、proto 字段名保持英文 snake_case / camelCase
+- **第三方 API** 原始字段名、akshare 列名
+- **Git commit message**：团队可中文或英文，不强制
+
+## 注释原则
+
+1. **解释「为什么」和「业务含义」**，不要复述代码字面意思。
+2. **对齐文档**：涉及 SoT、Checklist、M7、tier 时，可括号引用 `docs/02`、`docs/03` 章节。
+3. **AI 边界**：MCP、worker 相关代码须注释「只读 / 不下结论 / 不写入结论字段」。
+4. **简洁**：一行能说完不写段落；非 obvious 的才写。
+
+## 结构体字段（对齐 docs/03 schema）
+
+实现 `yamlstore`、`domain`、SQL 行扫描等类型时，字段须与 03 字段字典一一对应并加中文注释：
+
+```go
+// PortfolioPosition 单标的持仓视图（Layer A SoT；历史流水在 SQLite）。
+type PortfolioPosition struct {
+	Code          string          `yaml:"code"`           // 标的代码，文件内唯一
+	PositionPct   decimal.Decimal `yaml:"position_pct"`   // 当前占总资产 %，= open lot current_pct 之和
+	LotIDs        []string        `yaml:"lot_ids"`        // 关联 lot id（含已关闭，便于归因）
+}
+```
+
+- 注释写**业务含义**，不复述字段英文名。
+- 可括号引用 `03 §10B.2`、`Q2A` 等。
+- 金额/比例字段注释中可注明「Go 层用 decimal 读写」。
+
+## 未导出函数
+
+包内 `checkXxx`、`validateYyy` 等未导出函数，只要含业务规则或非一眼能看懂的 SQL，**必须**中文注释：
+
+```go
+// checkOpenLotsPct 校验 holding 标的：open/partial lot 的 current_pct 之和等于 position_pct（03 §10B.8）。
+func checkOpenLotsPct(db *sql.DB, pos yamlstore.PortfolioPosition) []string
+```
+
+## 示例
+
+```go
+// ApproveChecklist 将已提交的 Checklist 落库为 Journal，并同步 portfolio.yaml（见 03 §10B.7）。
+// YAML 写入失败时写入 sync_repairs，不回滚 SQL（T5）。
+func (s *ChecklistApp) ApproveChecklist(ctx context.Context, ac *account.Context, id string) (*ApproveResult, error)
+```
+
+```protobuf
+// 实时行情；用于冻结 data_snapshot，不包含买卖建议
+rpc FetchQuote(FetchQuoteRequest) returns (FetchQuoteResponse);
+```
+
+## 与架构文档关系
+
+完整约定见 [04-技术架构.md](../docs/04-技术架构.md) **§二A**。

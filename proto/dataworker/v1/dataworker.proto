@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+// Python data-worker 实现；Go core-server 作为客户端调用
+package dataworker.v1;
+
+import "common/v1/provenance.proto";
+
+option go_package = "github.com/investment-assistant/proto/dataworker/v1;dataworkerv1";
+
+// 外部数据采集服务（akshare 等）；不写入业务库
+service DataWorker {
+  // 探活；supervisor 启动 worker 后轮询
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  // 实时行情；用于 data_snapshot.price_snapshot
+  rpc FetchQuote(FetchQuoteRequest) returns (FetchQuoteResponse);
+  // 估值指标；用于建仓 Checklist 辅助（只呈现数据，不下结论）
+  rpc FetchValuation(FetchValuationRequest) returns (FetchValuationResponse);
+  // 公告/财报日历列表；daily crawl 入口
+  rpc FetchAnnouncements(FetchAnnouncementsRequest) returns (FetchAnnouncementsResponse);
+  // 指数/市场摘要；data_snapshot.market_snapshot
+  rpc FetchMarketSnapshot(FetchMarketSnapshotRequest) returns (FetchMarketSnapshotResponse);
+  // URL/文件/文本抽取；library ingest 预处理
+  rpc ExtractDocument(ExtractDocumentRequest) returns (ExtractDocumentResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool ok = 1;                      // 是否就绪
+  string version = 2;               // worker 版本
+  string python_version = 3;        // Python 版本
+  repeated string providers = 4;    // 已启用数据源，如 akshare
+}
+
+message FetchQuoteRequest {
+  string code = 1;        // 6 位股票代码
+  string account_id = 2;  // 仅日志用；Python 不得访问 DATA_ROOT
+}
+
+message FetchQuoteResponse {
+  common.v1.Provenance provenance = 1;
+  string code = 2;
+  string name = 3;
+  double price = 4;         // 现价
+  double change_pct = 5;    // 涨跌幅（%）
+  double change_amount = 6; // 涨跌额
+  string trade_date = 7;    // 交易日 YYYY-MM-DD
+}
+
+message FetchValuationRequest {
+  string code = 1;
+}
+
+message FetchValuationResponse {
+  common.v1.Provenance provenance = 1;
+  string code = 2;
+  double pe_ttm = 3;          // 市盈率 TTM
+  double pb = 4;                // 市净率
+  double ps_ttm = 5;              // 市销率 TTM
+  double pe_percentile = 6;       // PE 历史分位 0–100（若有）
+  double pb_percentile = 7;
+  string as_of_date = 8;          // 数据日期
+}
+
+message FetchAnnouncementsRequest {
+  repeated string codes = 1; // 标的列表（持仓+观察池）
+  string since = 2;            // 起始时间 ISO8601
+  AnnouncementKind kind = 3;
+}
+
+// 公告类型筛选
+enum AnnouncementKind {
+  ANNOUNCEMENT_KIND_UNSPECIFIED = 0;
+  ANNOUNCEMENT_KIND_ALL = 1;              // 全部公告
+  ANNOUNCEMENT_KIND_EARNINGS_CALENDAR = 2; // 财报预约
+}
+
+message AnnouncementItem {
+  common.v1.Provenance provenance = 1;
+  string code = 2;
+  string name = 3;
+  string title = 4;
+  string published_at = 5;
+  string url = 6;
+  string content_type = 7; // announcement | earnings_calendar
+  string summary = 8;      // 事实摘要；禁止结论性表述
+}
+
+message FetchAnnouncementsResponse {
+  repeated AnnouncementItem items = 1;
+  repeated FetchError errors = 2; // 按标的部分失败，不拖死整批
+}
+
+message FetchError {
+  string code = 1;
+  string message = 2;
+}
+
+message FetchMarketSnapshotRequest {
+  repeated string index_codes = 1; // 如 000300（沪深300）
+}
+
+message IndexSnapshot {
+  string code = 1;
+  string name = 2;
+  double close = 3;
+  double change_pct = 4;
+}
+
+message FetchMarketSnapshotResponse {
+  common.v1.Provenance provenance = 1;
+  repeated IndexSnapshot indices = 2;
+  string summary = 3; // 市场事实一句话；供 snapshot 使用
+}
+
+message ExtractDocumentRequest {
+  oneof source {
+    string url = 1;
+    bytes file_bytes = 2;
+    string text = 3;
+  }
+  string suggested_title = 4;
+  string mime_type = 5;
+}
+
+message ExtractDocumentResponse {
+  common.v1.Provenance provenance = 1;
+  string title = 2;
+  string text = 3;    // 正文；可能被截断
+  bool truncated = 4;
+  int32 char_count = 5;
+  repeated common.v1.StockRef related_stocks = 6;
+  map<string, string> meta = 7; // 如 author、publish_date
+}

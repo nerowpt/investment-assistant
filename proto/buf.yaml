@@ -1,0 +1,11 @@
+# buf 配置：proto lint 与代码生成（见 docs/04 §21.2）
+version: v2
+modules:
+  - path: .
+    name: buf.build/investment-assistant/api
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

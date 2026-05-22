@@ -1,0 +1,65 @@
+# MCP 工具注册表示例（Round 4）
+# 实现时 internal/mcp 读取此配置或内嵌同等 metadata
+# Cursor 启动：inv mcp（stdio）
+
+schema_version: 1
+
+server:
+  name: investment-assistant
+  version: "0.1.0"
+  # 每个 tool 的 description 必须包含 AI 边界声明（见 docs/04 §二十二）
+  ai_boundary_footer: |
+    【边界】本工具仅返回客观数据与历史记录，不构成投资建议；
+    不得代替用户填写结论性字段（分类、行动建议、置信度等）。
+
+tools:
+  - name: get_portfolio
+    readonly: true
+    mvp: 1
+    description: 读取当前 account 的 portfolio.yaml（持仓 SoT）
+
+  - name: get_watchlist
+    readonly: true
+    mvp: 1
+    description: 读取 watchlist.yaml 观察池
+
+  - name: search_library
+    readonly: true
+    mvp: 1
+    description: L1 研究素材精确检索（title/tags/code）
+
+  - name: get_library_item
+    readonly: true
+    mvp: 1
+    description: 按 lib_id 返回 canonical 素材元数据
+
+  - name: search_journal
+    readonly: true
+    mvp: 1
+    description: 按标的/时间检索决策 Journal 列表
+
+  - name: get_journal
+    readonly: true
+    mvp: 1
+    description: 单条 Journal 详情含 data_snapshot 摘要
+
+  - name: get_checklist_template
+    readonly: true
+    mvp: 1
+    description: 返回 Checklist 类型的 JSON Schema 与字段说明
+
+  - name: get_risk_rules
+    readonly: true
+    mvp: 1
+    description: 读取 risk_rules 与 personal_redlines 配置
+
+  - name: check_position_against_rules
+    readonly: true
+    mvp: 1
+    description: 模拟 M7 仓位/禁区检查（给定拟操作，不下结论）
+
+# MVP-2 预留（禁止 MVP-1 注册）
+reserved:
+  - approve_checklist
+  - promote_library_item
+  - write_tags

@@ -63,9 +63,7 @@
 
 ## 📍 项目当前状态(更新于 2026-05-19)
 
-**当前阶段: 阶段 3 已定稿 → 阶段 4 技术架构待开始**
-
-**03-数据架构与数据源 v0.9（Round 1–5 全部完成）**
+**当前阶段: 文档定稿完成 → 编码 H1（yamlstore）**
 
 设计采用「文档驱动 + 阶段推进」,每完成一份核心文档进入下一阶段。所有讨论结论沉淀到 `docs/`,对话仅作为上下文,不依赖记忆。
 
@@ -75,18 +73,16 @@
 | 阶段 1 | [01-产品定位与思路](docs/01-产品定位与思路.md) | ✅ v0.5 完成(叙事周期识别已合并) |
 | 阶段 2 | [02-核心场景与功能边界](docs/02-核心场景与功能边界.md) | ✅ v1.1 修订完成 |
 | 阶段 3 | [03-数据架构与数据源](docs/03-数据架构与数据源.md) | ✅ v0.9 定稿 |
-| 阶段 4 | [04-技术架构](docs/04-技术架构.md) | ⏳ 待开始 |
-| 阶段 5 | [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) | ⏳ 待开始 |
+| 阶段 4 | [04-技术架构](docs/04-技术架构.md) | ✅ v0.6 定稿 |
+| 阶段 5 | [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) | ✅ v0.1 定稿 |
+| **编码** | H0 ✅ → **H1** | 🔄 进行中 |
 
-### 阶段 3 已完成（v0.9）
+### 当前编码重点
 
-- [x] Round 1–1.5：SoT、多 account、`DATA_ROOT`
-- [x] Round 2：SQLite 流水 + L1 四表 + 归纳流水线
-- [x] Round 3：Layer A YAML + `config/*.example.yaml`
-- [x] Round 4：`inv library` / `inv tags` / `inv doctor` 命令面
-- [x] Round 5：备份/NAS（O5/O6）、MVP-1 数据源清单、`scripts/backup.example.*`
+> 详见 [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) §四 H1、§八。
 
-**下一步**：阶段 4 — Go/Python 分工、SQLite 迁移、CLI 实现顺序。
+- [x] H0：`inv version` + migrate + `doctor --scope library`
+- [ ] H1：YAML 读写 + `doctor --scope portfolio`
 
 ---
 
@@ -105,9 +101,9 @@ investment-assistant/
     ├── 00-讨论历史与决策日志.md              ← 关键决策时间线
     ├── 01-产品定位与思路.md                  ← 阶段 1 完成
     ├── 02-核心场景与功能边界.md              ← 阶段 2 完成
-    ├── 03-数据架构与数据源.md                ← 当前阶段
-    ├── 04-技术架构.md                       ← 待开始
-    └── 05-MVP-Roadmap.md                    ← 待开始
+    ├── 03-数据架构与数据源.md                ← 阶段 3 定稿 v0.9
+    ├── 04-技术架构.md                       ← 阶段 4 定稿 v0.6
+    ├── 05-MVP-Roadmap.md                    ← 阶段 5 定稿 v0.1
 ```
 
 ---
@@ -120,6 +116,7 @@ investment-assistant/
 4. **文档修订**：版本号 `v主版本.次版本`，每次重要修订递增次版本号，并更新本 README 状态
 5. **基线变化**：如果用户的持仓、理念、巡检结论变了，必须同步更新 `docs/_baseline/` 下对应文档
 6. **决策冲突**：如果新讨论与既有决策冲突，必须显式说明冲突内容并要求用户裁决
+7. **中文注释**：Go/Python/proto/SQL 须简体中文注释，见 `.cursor/rules/chinese-comments.mdc` 与 `docs/04` §二A
 
 ---
 

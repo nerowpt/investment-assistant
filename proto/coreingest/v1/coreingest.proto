@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+// Go core-server 实现；Python crawl 完成后回调写入 library_candidates
+package coreingest.v1;
+
+import "common/v1/provenance.proto";
+
+option go_package = "github.com/investment-assistant/proto/coreingest/v1;coreingestv1";
+
+// L1 候选入库服务；唯一有权写 library_candidates 的 gRPC 入口
+service CoreIngest {
+  // 单条候选：dedup + 相似度 + INSERT
+  rpc StageCandidate(StageCandidateRequest) returns (StageCandidateResponse);
+  // 批量候选：daily crawl 使用
+  rpc StageCandidateBatch(StageCandidateBatchRequest) returns (StageCandidateBatchResponse);
+}
+
+// 候选草稿（尚未进入 canonical library_items）
+message CandidateDraft {
+  common.v1.Provenance provenance = 1;
+  string source_entry = 2;   // crawl | manual | passive_discovery
+  string title = 3;
+  string content_type = 4;   // announcement | report | article | note | data
+  string media_type = 5;      // text | pdf | html | structured
+  repeated string related_stocks_json = 6; // 关联标的代码
+  string canonical_url = 7;
+  string summary_draft = 8;    // 事实摘要；AI 可协助排版，不得写结论
+  string extract_json = 9;     // 可选结构化抽取
+  bytes staging_hint = 10;     // 可选：原始字节引用（文件由 Go 写入 inbox）
+  string crawl_batch_id = 11;  //  crawl 批次 id，便于审计
+}
+
+message StageCandidateRequest {
+  string account_id = 1;
+  CandidateDraft draft = 2;
+}
+
+message StageCandidateResponse {
+  string candidate_id = 1;      // lc_* ；成功时返回
+  string match_tier = 2;        // none | exact | near | theme
+  string dedup_key = 3;
+  bool duplicate_dismissed = 4; // exact 重复时自动 dismiss
+  string error_message = 5;     // 成功时为空
+}
+
+message StageCandidateBatchRequest {
+  string account_id = 1;
+  repeated CandidateDraft drafts = 2;
+}
+
+message StageCandidateBatchResult {
+  int32 index = 1;              // 对应 drafts 下标
+  StageCandidateResponse result = 2;
+}
+
+message StageCandidateBatchResponse {
+  repeated StageCandidateBatchResult results = 1;
+}
