@@ -1,0 +1,59 @@
+# Copy to data/accounts/{account_id}/state/portfolio.yaml on first run.
+# SoT: current holdings (Q1A). History lives in SQLite journals + lots.
+
+schema_version: 1
+
+meta:
+  updated_at: "2026-05-19T10:00:00+08:00"
+  total_equity_ref: null   # optional; used when computing position_pct from shares
+  currency: CNY
+
+positions:
+  - code: "002624"
+    name: 完美世界
+    state: holding
+    position_type: swing
+    position_pct: 8
+    cost_basis: 18.20
+    shares: 10000
+    sector_id: sector_gaming
+    thesis_id: thesis_yihuan_global
+    entry_date: 2026-05-18
+    thesis_version: 2
+    investment_thesis: |
+      博弈异环全球化，PC 占比 65%，渠道分成结构优于同业。
+      加仓后：测试反馈与海外热度继续验证，未见核心反向证据。
+    target_price:
+      lower: 32
+      upper: 36
+    stop_loss: 12.0
+    reversal_conditions:
+      - 异环 PC 月流水连续 2 月环比 -20% 以上
+      - 公司公告异环团队核心人员变动
+    opportunity_cost_benchmark: CSI_TECH
+    confidence: medium
+    related_library_ids:
+      - lib_20260518_003
+      - lib_20260618_004
+    lot_ids:
+      - lot_20260518_001
+      - lot_20260618_001
+    journal_ids:
+      - j_20260518_001
+      - j_20260618_002
+    watchlist_origin_id: w_20260518_001
+    legacy_flags: []
+    monitoring:
+      last_inspection_id: insp_20260618_001
+      last_inspection_at: "2026-06-18T09:00:00+08:00"
+      next_inspection_due: 2026-07-18
+      classification: wait_for_style_switch
+      planned_action: hold
+    notes: null
+
+  # Closed positions are kept for attribution; do not delete.
+  # - code: "600519"
+  #   state: closed
+  #   position_pct: 0
+  #   closed_at: 2026-04-01
+  #   ...

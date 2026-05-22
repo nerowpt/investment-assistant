@@ -1,0 +1,38 @@
+# Copy to data/accounts/{account_id}/state/watchlist.yaml
+# SoT: watch pool (Q2A). watching items do NOT appear in portfolio.yaml.
+
+schema_version: 1
+
+meta:
+  updated_at: "2026-05-19T10:00:00+08:00"
+
+items:
+  - id: w_20260519_001
+    code: "688xxx"
+    name: 示例科创标的
+    watch_type: stock
+    state: watching
+    source_entry: from_candidate
+    source_candidate_id: cand_20260519_002
+    watch_reason: 财报季行业对比中现金流改善，需验证订单持续性
+    hypothesis: 若 Q2 订单与毛利率同步改善，可能进入景气上行阶段
+    key_metrics_to_watch:
+      - 季度订单增速
+      - 毛利率环比
+      - 行业政策口径变化
+    expected_trigger: 连续两季订单与毛利率改善，且估值分位仍低于历史中位
+    invalid_condition: 订单增速转负或毛利率连续下滑
+    review_date: 2026-06-19
+    priority: medium
+    related_library_ids: []
+    related_positions: []
+    created_at: "2026-05-19T10:00:00+08:00"
+    notes: null
+
+  # Example: promoted to holding (kept for traceability)
+  # - id: w_20260518_001
+  #   code: "002624"
+  #   state: removed
+  #   removed_at: "2026-05-18T15:00:00+08:00"
+  #   removed_reason: promoted_to_holding
+  #   promoted_journal_id: j_20260518_001

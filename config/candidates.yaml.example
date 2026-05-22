@@ -1,0 +1,46 @@
+# Copy to data/accounts/{account_id}/state/candidates.yaml
+# SoT: M6 event candidate pool (S1.5). MVP-1: CLI manual maintenance.
+
+schema_version: 1
+
+meta:
+  updated_at: "2026-05-19T10:00:00+08:00"
+
+batches:
+  - id: cb_20260519_001
+    title: 2026Q2 游戏版号与产品节奏观察
+    event_type: policy
+    period: monthly
+    summary: |
+      5 月版号发放节奏与 4 月接近；部分开放世界品类获号。
+      事实来源：官网公告列表（tier A）。
+    created_at: "2026-05-19T08:00:00+08:00"
+    review_by: 2026-05-26
+    status: active
+    report_path: null
+    items:
+      - id: cand_20260519_001
+        code: "002624"
+        name: 完美世界
+        candidate_kind: stock
+        fact_summary: 新品测试节奏公开信息增多；需与用户已有持仓 thesis 区分
+        source_refs:
+          - source: announcement_list
+            tier: A
+            captured_at: "2026-05-19T08:00:00+08:00"
+            library_candidate_id: lc_20260519_003
+        status: pending
+        notes: 已持仓 — 候选仅作行业事件跟踪，不重复进观察池
+
+      - id: cand_20260519_002
+        code: "688xxx"
+        name: 示例科创标的
+        candidate_kind: stock
+        fact_summary: 同业财报季对比中现金流改善标的之一
+        source_refs:
+          - source: manual_research
+            tier: B
+            captured_at: "2026-05-19T09:00:00+08:00"
+        status: promoted
+        promoted_watchlist_id: w_20260519_001
+        notes: 已发起观察池 Checklist

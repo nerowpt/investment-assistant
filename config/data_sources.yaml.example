@@ -1,0 +1,64 @@
+# Copy to data/accounts/{account_id}/state/data_sources.yaml on first run.
+# Maps external providers to default information tier (S/A/B/C/D).
+
+defaults:
+  tier: B
+
+providers:
+  akshare:
+    enabled: true
+    tier: A
+    use_for: [price, valuation, announcement_list]
+  tushare:
+    enabled: false
+    tier: A
+    use_for: [price, financials]
+  manual_upload:
+    tier: B
+  xueqiu:
+    enabled: false
+    tier: C
+    use_for: [community_posts]
+
+# Semantic content types (library_items.content_type)
+content_types:
+  - announcement
+  - report
+  - article
+  - note
+  - transcript
+  - data
+
+# Carrier modalities (library_items.media_type)
+media_types:
+  - text
+  - pdf
+  - html
+  - image
+  - structured
+  # MVP-2: audio, video
+
+# --- L1 ingest & crawl (per-account state overrides allowed) ---
+library_crawl:
+  enabled: true
+  schedule: daily          # daily | cron (MVP-2)
+  run_at: "08:00"
+  timezone: Asia/Shanghai
+  scopes:
+    - portfolio            # holdings symbols
+    - watchlist
+  source_types:
+    - announcement
+    - earnings_calendar
+  # On crawl: always write library_candidates only, never library_items directly
+  post_process: similarity_analysis
+
+library_ingest:
+  # Both crawl and manual use the same candidate → analyze → resolve pipeline
+  always_stage_as_candidate: true
+  manual_interactive_review: true
+  crawl_batch_review: true
+  similarity:
+    mvp1_engine: rules     # rules | embedding (MVP-2)
+    exact_dedup: true
+  candidate_ttl_days: 180

@@ -1,0 +1,115 @@
+# Copy to data/accounts/{account_id}/state/personal_redlines.yaml
+# SoT: personal red lines (02 §18.6). AI must NOT auto-edit this file.
+
+schema_version: 1
+
+meta:
+  updated_at: "2026-05-19T10:00:00+08:00"
+
+redlines:
+  - id: r001
+    rule: 不在 thesis 未增强时因亏损扩大而报复性加仓
+    severity: hard
+    enabled: true
+    related_scenarios: [add]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r002
+    rule: 不在大盘单日暴跌时仅因恐慌止损
+    severity: soft
+    enabled: true
+    related_scenarios: [sell]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r003
+    rule: 不用「低估值」单独作为建仓或加仓理由
+    severity: soft
+    enabled: true
+    related_scenarios: [buy, add]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r004
+    rule: 不在无素材、无反转条件时重仓买入
+    severity: hard
+    enabled: true
+    related_scenarios: [buy]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r005
+    rule: 不因厌倦长期不涨而卖出，除非明确 time_cost 归因
+    severity: soft
+    enabled: true
+    related_scenarios: [sell]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r006
+    rule: 不在没有 target_price / stop_loss / reversal_conditions 时提交建仓
+    severity: hard
+    enabled: false
+    related_scenarios: [buy]
+    exception_allowed: false
+    trigger_kind: builtin
+    trigger_condition: Checklist 校验已覆盖，可作双保险
+
+  - id: r007
+    rule: 不把「长期持有」作为回避机会成本归因的理由
+    severity: soft
+    enabled: false
+    related_scenarios: [review, sell]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r008
+    rule: 不在 emotion_tag=fomo 时扩大仓位，除非二次确认和例外说明
+    severity: soft
+    enabled: false
+    related_scenarios: [buy, add]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r009
+    rule: 不在 thesis 已漂移但未更新 Journal 的情况下继续加仓
+    severity: hard
+    enabled: false
+    related_scenarios: [add]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r010
+    rule: 不把单一叙事信号当作完整 thesis
+    severity: soft
+    enabled: false
+    related_scenarios: [buy, add]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r011
+    rule: 不在单一 thesis 暴露超过 hard block 后继续新增同逻辑仓位
+    severity: hard
+    enabled: false
+    related_scenarios: [buy, add]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  - id: r012
+    rule: value_trap_or_broken 分类下继续持有必须说明
+    severity: soft
+    enabled: false
+    related_scenarios: [inspect, review]
+    exception_allowed: true
+    trigger_kind: builtin
+
+  # Custom example (MVP-2 keyword redlines):
+  # - id: r_custom_001
+  #   rule: 不投我不懂的行业
+  #   severity: hard
+  #   enabled: false
+  #   related_scenarios: [buy, add]
+  #   exception_allowed: true
+  #   trigger_kind: keyword
+  #   trigger_keywords: [半导体设备, 量子计算]

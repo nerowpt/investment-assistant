@@ -1,0 +1,32 @@
+# Copy to data/accounts/{account_id}/state/backup.yaml
+# Optional per-account backup policy (Round 5 / O5).
+
+schema_version: 1
+
+defaults:
+  mode: lite              # lite | full — weekly default
+  retain_count: 8         # inv backup prune --keep
+  warn_if_older_than_days: 7   # checklist submit warning threshold
+
+schedule:
+  # MVP-1: manual only; cron reserved for MVP-2
+  enabled: false
+  cron: "0 3 * * 0"       # e.g. Sunday 03:00 (not implemented in MVP-1)
+
+modes:
+  lite:
+    include:
+      - state
+      - db
+  full:
+    include:
+      - state
+      - db
+      - library
+      - reports
+
+# Override BACKUP_ROOT env; null = {DATA_ROOT}/_backups
+backup_root: null
+
+# Optional second copy (user runs rclone/sync externally)
+# offsite_hint: /mnt/nas/ia-backups

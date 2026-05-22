@@ -1,0 +1,158 @@
+# Copy to data/accounts/{account_id}/state/controlled_tags.yaml
+# Scheme C (O4): system + user + suggested layered vocabulary.
+#
+# Effective tag ids for library_items.tags_json = enabled(system) + user
+# suggested tags MUST be confirmed via CLI before use (promoted to user).
+
+schema_version: 2
+scheme: C
+
+rules:
+  allow_freeform_tags: false
+  freeform_field: user_notes
+  max_tags_per_item: 12
+  suggested_ttl_days: 90          # unconfirmed suggested tags expire (reserved MVP-2 job)
+
+# Shipped with app / upgraded on release; user may disable but not delete ids
+system:
+  - id: sector_broker
+    label: 券商
+    dimension: sector
+    enabled: true
+  - id: sector_healthcare_device
+    label: 医疗器械
+    dimension: sector
+    enabled: true
+  - id: sector_game
+    label: 游戏
+    dimension: sector
+    enabled: true
+  - id: sector_consumer
+    label: 消费
+    dimension: sector
+    enabled: true
+  - id: sector_innovative_pharma
+    label: 创新药
+    dimension: sector
+    enabled: true
+  - id: sector_tech_hardware
+    label: 科技硬件
+    dimension: sector
+    enabled: true
+  - id: sector_ai_compute
+    label: AI算力
+    dimension: sector
+    enabled: true
+
+  - id: theme_ai_compute
+    label: AI算力叙事
+    dimension: theme
+    enabled: true
+  - id: theme_game_overseas
+    label: 游戏出海
+    dimension: theme
+    enabled: true
+  - id: theme_open_world
+    label: 开放世界新品
+    dimension: theme
+    enabled: true
+  - id: theme_valuation_repair
+    label: 估值修复
+    dimension: theme
+    enabled: true
+  - id: theme_narrative_cycle
+    label: 叙事周期
+    dimension: theme
+    enabled: true
+  - id: theme_broker_beta
+    label: 券商Beta
+    dimension: theme
+    enabled: true
+  - id: theme_device_recovery
+    label: 器械复苏
+    dimension: theme
+    enabled: true
+
+  - id: event_earnings
+    label: 财报业绩
+    dimension: event
+    enabled: true
+  - id: event_guidance
+    label: 业绩预告指引
+    dimension: event
+    enabled: true
+  - id: event_policy
+    label: 政策监管
+    dimension: event
+    enabled: true
+  - id: event_product_launch
+    label: 产品发布上线
+    dimension: event
+    enabled: true
+  - id: event_mgmt_change
+    label: 管理层变动
+    dimension: event
+    enabled: true
+  - id: event_industry_capex
+    label: 行业CapEx
+    dimension: event
+    enabled: true
+  - id: event_mna
+    label: 并购整合
+    dimension: event
+    enabled: true
+
+  - id: thesis_low_valuation
+    label: 低估值
+    dimension: thesis
+    enabled: true
+  - id: thesis_earnings_growth
+    label: 业绩增长
+    dimension: thesis
+    enabled: true
+  - id: thesis_cycle_bottom
+    label: 周期底部
+    dimension: thesis
+    enabled: true
+  - id: thesis_roe_improvement
+    label: ROE改善
+    dimension: thesis
+    enabled: true
+  - id: thesis_catalyst
+    label: 事件催化
+    dimension: thesis
+    enabled: true
+
+  - id: material_announcement
+    label: 公告
+    dimension: material
+    enabled: true
+  - id: material_research_report
+    label: 研报
+    dimension: material
+    enabled: true
+  - id: material_transcript
+    label: 纪要
+    dimension: material
+    enabled: true
+  - id: material_community_post
+    label: 社区帖
+    dimension: material
+    enabled: true
+  - id: material_user_note
+    label: 个人笔记
+    dimension: material
+    enabled: true
+
+# User-added via CLI: ia tags add --id ... --label ... --dimension ...
+user: []
+
+# Written by review / AI suggest flow; NOT valid in tags_json until confirmed
+# Example (commented):
+# suggested:
+#   - id: theme_humanoid_robot
+#     label: 人形机器人
+#     dimension: theme
+#     source: review_2026Q2_001
+#     suggested_at: 2026-07-01
+suggested: []

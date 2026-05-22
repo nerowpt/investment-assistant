@@ -1,0 +1,27 @@
+# Runtime data (SoT: DATA_ROOT, default ./data/)
+data/
+
+# SQLite
+*.sqlite
+*.sqlite3
+*.db
+
+# Backups & local env
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Go
+bin/
+dist/

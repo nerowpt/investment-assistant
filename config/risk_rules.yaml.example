@@ -1,0 +1,42 @@
+# Copy to data/accounts/{account_id}/state/risk_rules.yaml
+# SoT: M7 position limits (02 §18.4). Changes require review → rule_change journal.
+
+schema_version: 1
+
+meta:
+  updated_at: "2026-05-19T10:00:00+08:00"
+
+position_limits:
+  single_stock:
+    warning_pct: 10
+    hard_block_pct: 15
+  single_sector:
+    warning_pct: 30
+    hard_block_pct: 40
+  total_equity:
+    warning_pct: 90
+    hard_block_pct: 95
+  single_thesis:
+    warning_pct: 20
+    hard_block_pct: 30
+
+legacy_over_limit:
+  allow_on_import: true
+  block_expansion_on_legacy: true
+
+exceptions:
+  # - code: "600519"
+  #   rule: single_stock
+  #   max_pct: 20
+  #   reason: 核心配置允许更高集中度
+  #   expires_at: null
+
+opportunity_cost:
+  enabled: false
+  benchmark: HS300
+  alert_threshold_pct: -25
+
+drawdown:
+  enabled: false
+  account_level_pct: -15
+  single_position_pct: -30
