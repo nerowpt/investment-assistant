@@ -110,6 +110,10 @@ CREATE TABLE IF NOT EXISTS lots (
     shares                  REAL,            -- logical: DECIMAL
     status                  TEXT NOT NULL,  -- open | partial | closed
     linked_buy_journal_id   TEXT,
+    -- 复权与分红（docs/06 §D8；MVP-1 字段位预留，MVP-2 H13 起填充）
+    dividends_received       REAL,           -- logical: DECIMAL；已收现金分红累计
+    adjusted_cost_basis      REAL,           -- logical: DECIMAL；前复权调整后成本价（NULL = 用 cost_basis）
+    corporate_actions_json   TEXT,           -- logical: JSON；送转/拆股/配股事件流水
     created_at              TEXT NOT NULL
 );
 

@@ -75,7 +75,8 @@
 | 阶段 3 | [03-数据架构与数据源](docs/03-数据架构与数据源.md) | ✅ v0.9 定稿 |
 | 阶段 4 | [04-技术架构](docs/04-技术架构.md) | ✅ v0.6 定稿 |
 | 阶段 5 | [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) | ✅ v0.1 定稿 |
-| **编码** | H0 ✅ → **H1** | 🔄 进行中 |
+| Review | [06-架构Review决议](docs/06-架构Review决议.md) | ✅ v0.1（D1–D19，2026-05-22） |
+| **编码** | H0 ✅ → **H1** | 🔄 进行中（P0 已落地：decimal_scan / Monitoring / PortfolioStore） |
 
 ### 当前编码重点
 
@@ -104,6 +105,7 @@ investment-assistant/
     ├── 03-数据架构与数据源.md                ← 阶段 3 定稿 v0.9
     ├── 04-技术架构.md                       ← 阶段 4 定稿 v0.6
     ├── 05-MVP-Roadmap.md                    ← 阶段 5 定稿 v0.1
+    ├── 06-架构Review决议.md                  ← 2026-05-22 Review v0.1（D1–D19）
 ```
 
 ---

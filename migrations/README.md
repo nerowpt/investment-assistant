@@ -39,7 +39,13 @@ inv doctor --scope library
 
 - **v1**：Round 5 定稿；含 `id_sequences`、`sync_repairs` 及全部 MVP-1 业务表。
 - 变更须新增 `002_*.up.sql`，**禁止**修改已发布 up 文件。
+- ⚠️ **H1 期间例外窗口**（截至 H1 完成、首次写入真实数据前）：
+  尚未在任何 account 生产数据上跑过 buy/sell approve，因此 `001_initial.up.sql` **仍允许在
+  H1 期间做兼容性微调**（如 docs/06 §D8 追加 lots 复权字段）。
+  H5 buy approve 端到端跑通后，001 进入永久冻结，后续一律走 002+。
 
 ## DECIMAL / REAL
 
-`lots`、`lot_allocations` 中比例与金额在 SQLite 用 `REAL` 存储；Go `domain`/`store` 须用 `shopspring/decimal` 读写，禁止 `float64` 相等比较。MySQL 迁移时映射为 `DECIMAL(18,6)`（见 04 §10.4.3）。
+`lots`、`lot_allocations` 中比例与金额在 SQLite 用 `REAL` 存储；Go `domain`/`store` 须用 `shopspring/decimal` 读写，禁止 `float64` 相等比较。
+读取时必须走 `internal/core/store/sqlstore/decimal_scan.go`（`CAST AS TEXT` + `decimal.NewFromString`）。
+MySQL 迁移时映射为 `DECIMAL(18,6)`（见 04 §10.4.3、docs/06 §D11）。

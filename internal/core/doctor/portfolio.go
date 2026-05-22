@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/investment-assistant/investment-assistant/internal/core/store/sqlstore"
 	"github.com/investment-assistant/investment-assistant/internal/core/store/yamlstore"
-	"github.com/shopspring/decimal"
 )
 
 // CheckPortfolio 校验 portfolio.yaml 与 SQLite lots/journals 一致。
@@ -64,23 +64,16 @@ func checkLotIDs(db *sql.DB, pos yamlstore.PortfolioPosition) []string {
 }
 
 // checkOpenLotsPct 校验 holding 标的：open/partial lot 的 current_pct 之和等于 position_pct（03 §10B.8）。
+// 关键：SQLite REAL 列必须经 CAST AS TEXT + decimal.NewFromString 通道读取，
+// 禁止 float64 中转（T24 / docs/06 §D11）。
 func checkOpenLotsPct(db *sql.DB, pos yamlstore.PortfolioPosition) []string {
-	rows, err := db.Query(
-		`SELECT current_pct FROM lots WHERE code = ? AND status IN ('open', 'partial')`,
+	sum, err := sqlstore.SumDecimalColumn(
+		db,
+		`SELECT CAST(current_pct AS TEXT) FROM lots WHERE code = ? AND status IN ('open', 'partial')`,
 		pos.Code,
 	)
 	if err != nil {
 		return []string{fmt.Sprintf("%s: 查询 open lots: %v", pos.Code, err)}
-	}
-	defer rows.Close()
-
-	sum := decimal.Zero
-	for rows.Next() {
-		var pct float64
-		if err := rows.Scan(&pct); err != nil {
-			return []string{fmt.Sprintf("%s: 读取 lot pct: %v", pos.Code, err)}
-		}
-		sum = sum.Add(decimal.NewFromFloat(pct))
 	}
 	if !sum.Equal(pos.PositionPct) {
 		return []string{fmt.Sprintf(

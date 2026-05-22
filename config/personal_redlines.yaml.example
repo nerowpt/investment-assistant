@@ -1,5 +1,12 @@
 # Copy to data/accounts/{account_id}/state/personal_redlines.yaml
 # SoT: personal red lines (02 §18.6). AI must NOT auto-edit this file.
+#
+# severity 拦截差异（02 §18.7，2026-05-22 Review docs/06 §D5）：
+#   - hard: 强拦截。Submit 时 exception_json 必填：
+#       triggered_rule_id + exception_reason(>=80 字) +
+#       expected_compensation + review_date +
+#       至少 1 条 S/A tier library_item_id + confirm_text
+#   - soft: 软警示。仅记录 acked + 可选 ack_note(>=20 字)，不阻断 Submit
 
 schema_version: 1
 

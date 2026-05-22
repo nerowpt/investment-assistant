@@ -85,6 +85,27 @@ gantt
 | E9 | **备份恢复** | `inv backup create` → restore → `inv doctor --scope all` 通过 |
 | E10 | **AI 协作** | Cursor 通过 MCP **9 个只读 tool** 取 portfolio / journal / library；**无**写 tool |
 
+### 3.1.1 定量门槛（2026-05-22 Review 追加，见 [docs/06 §D2](06-架构Review决议.md)）
+
+在 E1–E10 端到端路径之外，**追加以下定量门槛**。只要任一未达成，**不得**启动 MVP-2 任何里程碑。
+
+| # | 指标 | 目标值 | 验收方式 |
+|---|---|---|---|
+| **Q1** | Journal 累计条数 | **≥ 20 笔**（buy/add/sell/inspect 至少各 1 笔） | `inv journal list` 计数 |
+| **Q2** | 完整 quarter 复盘报告 | **≥ 1 份**，含用户手填 `confirmed_patterns` | `inv review` 输出 + 人工签收 |
+| **Q3** | tier C/D 在"主要依据"占比 | **从初始未控降到 < 30%** | 复盘报告统计 |
+| **Q4** | 风险护栏例外说明字数 | hard block 例外平均 ≥ 80 字（防"形同虚设"） | `inv risk exceptions stats`（H7 提供） |
+| **Q5** | 完整 dogfood 周期 | **≥ 4 周**真实使用且未推翻 MVP-1 架构 | 用户书面确认 |
+
+### 3.1.2 Dogfood 强制门禁（2026-05-22 Review 追加，见 [docs/06 §D4](06-架构Review决议.md)）
+
+进入 MVP-2 任何里程碑前，**必须**完成一轮"真实历史交易 dogfood"：
+
+1. **数据来源**：`docs/_baseline/02-当前持仓与个人逻辑.md` 中的真实持仓。
+2. **路径**：完整跑通 import (S0.5) → S0 素材入库 → S4 巡检 → S6 复盘 至少一轮。
+3. **失败标准**：用户走完后明确表达"不想再用 CLI 操作 / 流程过繁 / 价值未感知"。
+4. **失败处置**：暂停 MVP-2，**回到 MVP-1 简化主路径而非加新功能**。优先简化最频繁动作（推断为 inspect / library add）。
+
 ### 3.2 非功能要求
 
 | 项 | 标准 |
@@ -279,7 +300,7 @@ gantt
 | **H9** | 叙事信号包六维 + `narrative_signals.yaml` | 3–4 周 | MVP-2A S7 |
 | **H10** | `narrative_stage_assessment` 强拦截 | 1–2 周 | MVP-2A |
 | **H11** | M6 候选池自动扫描 + overseas_peers | 2–3 周 | MVP-2A |
-| **H12** | FTS5 + 简易 Web 录入 | 2–3 周 | MVP-2B |
+| **H12** | 简易 Web 录入（FTS5 视 H2 评估结果定，见 §3.1.1 / [docs/06 §D10](06-架构Review决议.md)） | 2–3 周 | MVP-2B |
 | **H13** | 机会成本 + 回撤/集中度增强 | 2 周 | MVP-2B M7 |
 | **H14** | 错误模式 + 叙事错过模式扫描 | 2–3 周 | MVP-2B M5 |
 | **H15** | Checklist POST/approve API + SSE | 2–3 周 | MVP-2B Web 写 |
@@ -324,6 +345,22 @@ H1  yamlstore + doctor(portfolio|watchlist)
 2. `account.EnsureInitialized` 复制 example yaml
 3. `inv doctor --scope portfolio`：lot_ids ↔ SQLite lots 交叉校验
 4. `go.mod` 添加 `github.com/shopspring/decimal`
+
+---
+
+## 八点五、文档冻结与"不超前 2H"规则（2026-05-22 Review 追加，见 [docs/06 §D19](06-架构Review决议.md)）
+
+为防止"文档完整度走在实现完整度的 7 倍之前"导致工期失控，自 H1 起执行以下纪律：
+
+1. **冻结目标**：H1 结束前 **`docs/03` / `docs/04` 不再做细节字段或章节修改**。
+2. **新需求处理**：H1–H5 期间任何新发现的字段需求、schema 调整、接口变更，**只在 `docs/00` 决策日志追加**，**不**回填 `docs/03 / 04`。
+3. **回填时机**：H5 跑通后（buy approve 端到端 pass），统一回填 `docs/03 / 04` 并发布 v 次版本号。
+4. **超前限制**：任何 docs/ 文件提到的功能 / 字段，**不得超前当前已完成的最高里程碑 + 2H**。
+   - 例：当前 H1 进行中 → docs/ 可详写到 H3；H5+ 细节字段不许在此期间扩写。
+5. **执行检查**：每个 H 完成验收时新增一项"文档同步检查"：
+   - 是否有"未实现但已在 docs 中详写"的字段被引用到代码？
+   - 若有，要么实现要么从 docs 删除，**不允许文档欠债**。
+6. **唯一例外**：`docs/06`（Review 决议）与 `docs/00`（决策日志）可以超前——它们的职责就是记录未实现的决策。
 
 ---
 
