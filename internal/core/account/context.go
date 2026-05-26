@@ -76,6 +76,50 @@ func (c *Context) PortfolioPath() string {
 	return filepath.Join(c.StateDir, "portfolio.yaml")
 }
 
+// WatchlistPath 返回 watchlist.yaml 路径。
+func (c *Context) WatchlistPath() string {
+	return filepath.Join(c.StateDir, "watchlist.yaml")
+}
+
+// ControlledTagsPath 返回 controlled_tags.yaml 路径。
+func (c *Context) ControlledTagsPath() string {
+	return filepath.Join(c.StateDir, "controlled_tags.yaml")
+}
+
+// RunDir 返回运行时目录（worker.port、supervisor 状态）。
+func (c *Context) RunDir() string {
+	return filepath.Join(c.DataRoot, ".run")
+}
+
+// WorkerPortPath 返回 worker 端口文件路径（Windows）。
+func (c *Context) WorkerPortPath() string {
+	return filepath.Join(c.RunDir(), "worker.port")
+}
+
+// WorkerRepoPath 返回 Python data-worker 包根目录。
+func WorkerRepoPath() string {
+	if root := os.Getenv("IA_REPO_ROOT"); root != "" {
+		return filepath.Join(root, "services", "data-worker")
+	}
+	// 从当前工作目录向上查找 go.mod
+	wd, err := os.Getwd()
+	if err == nil {
+		dir := wd
+		for i := 0; i < 6; i++ {
+			candidate := filepath.Join(dir, "services", "data-worker")
+			if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+				return candidate
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+	return filepath.Join("services", "data-worker")
+}
+
 // EnsureInitialized 创建目录并从 config 模板复制缺失的 state 文件。
 func (c *Context) EnsureInitialized() error {
 	if err := c.EnsureDirs(); err != nil {

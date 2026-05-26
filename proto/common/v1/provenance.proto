@@ -3,7 +3,7 @@ syntax = "proto3";
 // 公共消息：数据来源三元组（对齐 03 §4.6 / 02 tier 确认）
 package common.v1;
 
-option go_package = "github.com/investment-assistant/proto/common/v1;commonv1";
+option go_package = "github.com/investment-assistant/investment-assistant/gen/go/common/v1;commonv1";
 
 // 数据来源与可信度（source / tier / timestamp）
 message Provenance {

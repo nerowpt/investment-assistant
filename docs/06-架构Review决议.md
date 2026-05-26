@@ -1,6 +1,6 @@
 # 06 - 架构 Review 决议（2026-05-22）
 
-> 文档版本：v0.1（H1 进行中第一次集中 Review 决议）
+> 文档版本：v0.1.2（D3/D5 补充决议采纳 + H1 字段字典）
 > 最后修订：2026-05-22
 > 关联文档：[00-讨论历史与决策日志](00-讨论历史与决策日志.md) · [01-产品定位与思路](01-产品定位与思路.md) · [02-核心场景与功能边界](02-核心场景与功能边界.md) · [03-数据架构与数据源](03-数据架构与数据源.md) · [04-技术架构](04-技术架构.md) · [05-MVP-Roadmap](05-MVP-Roadmap.md)
 
@@ -78,6 +78,13 @@
 3. **MVP-1 不做**：实时弹窗、生理特征采集、对话情绪分析（后两者是隐私 / 工程黑洞）。
 4. **schema 预留**：H1 在 `checklist_submissions.payload_json` 中预留 `emotion_retrospect: null` 字段位，避免 H6 再迁移。
 
+**MVP-1 实现方式（2026-05-22 采纳，与 D18 对齐）**：
+
+- **不用 cron**；emotion 回溯改为：
+  - `inv emotion retrospect list` / `inv emotion retrospect answer <id>`（H6 交付）；
+  - 或打开 sell/journal 相关 CLI 时的 **惰性提示**。
+- MVP-2 H16 引入调度器后，再自动化 30/90 天比对。
+
 ### D4 — Dogfood 强制门禁（P1，影响 docs/05）
 
 进入 MVP-2 任何里程碑前，**必须**完成一轮"真实历史交易 dogfood"：
@@ -101,6 +108,13 @@
 |---|---|---|
 | `hard` | **强拦截**：必须填写完整例外说明才能 Submit | `triggered_rule_id` + `exception_reason`（≥ 80 字）+ `expected_compensation` + `review_date` + **至少 1 条 S/A tier `library_item_id` 作为依据** + `confirm_text="我已知悉本次例外永久记入 Journal"` |
 | `soft` | **软警示**：仅显示警告，提交时记录"warning ack"，不强制例外说明 | `acked: true` + `ack_note`（可选 ≥ 20 字） |
+
+**MVP-1 降级（2026-05-22 采纳）**：若 L1 尚无 S/A 素材，hard block 例外允许：
+
+- `manual_tier_a_note`（≥ 80 字）代替 `library_item_id`；
+- 勾选 `no_library_material_ack: true`（「我确认暂无 S/A 素材入库」）。
+
+MVP-2 L1 稳定后改为强制 `library_item_id`。
 
 **违规绕过路径检测**（MVP-2 H14 复盘阶段）：扫描"hard block 后 7 天内的 Journal 缺口"，对照券商对账单提示用户"本月可能有未记录交易"。
 
@@ -385,7 +399,8 @@ handler 注册到 `Registry`，按 `checklist_type` 分发。
 | H1-C3 | D12 | `internal/core/store/yamlstore/portfolio.go` 加 Monitoring | round-trip 测试通过 |
 | H1-C4 | D13 | yamlstore 全量接口化 + Memory 实现 | H4 mock 可用 |
 | H1-C5 | D3 | `checklist_submissions.payload_json` schema 预留 `emotion_retrospect: null` | H1 yamlstore PR 内说明 |
-| H1-C6 | D8 | `lots` 表 schema 加 3 字段位（dividends_received / adjusted_cost_basis / corporate_actions_json） | migration 002 或并入 001 时机决议 |
+| H1-C6 | D8 | `lots` 表 schema 加 3 字段位 | migration 001 已含 |
+| H1-C7 | 文档 | 字段字典：`ref-portfolio-yaml-fields` + `schema/*.go` + example 中文注释 | manual + IDE 悬停 |
 
 > **C6 时机讨论**：原则上 `001_initial.up.sql` 不应再改（T20）。本决议**例外**允许 H1 期间因尚未在生产数据使用而直接修改 001；但必须在 `migrations/README.md` 注明"H1 期间 001 仍可微调，MVP-1 发布后冻结"。
 
@@ -440,8 +455,50 @@ handler 注册到 `Registry`，按 `checklist_type` 分发。
 
 ---
 
+## 八、二次审阅补充（2026-05-22，编码启动前）
+
+> 以下为实现前 AI 二次审阅意见；**§8.2、§8.3 已于 2026-05-22 由用户全部采纳**，已回写 §D3、§D5 正文。
+
+### 8.1 总体：无重大异议
+
+D1–D19 与已回填的 01–05 / 代码（D11/D12/D13/C6）**方向一致**。P0 项已落地，可继续 H1 剩余批次 + 后续里程碑。
+
+### 8.2 D3 × D18 调度冲突 ✅ 已采纳
+
+| 文档 | 说法 |
+|---|---|
+| **D3** | H6 起「调度器」自动 30/90 天 emotion 回溯 |
+| **D18** | MVP-1 **删除 cron 长驻**；无 daily 调度 |
+
+**最终决议**：
+
+- MVP-1 **不用 cron**；emotion 回溯改为 **手动 CLI** + **惰性提示**（见 §D3 补充段）。
+- MVP-2 H16 引入调度器后，再自动化 D3 第 1 条。
+
+### 8.3 D5 hard block 强制 S/A 素材 ✅ 已采纳
+
+hard block 要求「至少 1 条 S/A tier `library_item_id`」在 **L1 尚空** 时可能阻断所有例外路径。
+
+**最终决议**：
+
+- MVP-1：允许 `manual_tier_a_note`（≥ 80 字）+ `no_library_material_ack`（见 §D5 补充段）。
+- MVP-2：L1 稳定后改为强制 `library_item_id`。
+
+### 8.4 已采纳补充
+
+| 项 | 处理 |
+|---|---|
+| 验证方式 | 新增 [`docs/07-接口与验证手册.md`](07-接口与验证手册.md) + [`docs/manual/`](manual/) |
+| 每功能 DoD | 代码 + manual 页 + `go test` 三件套（07 §三） |
+| D11 REAL vs TEXT | 维持 DDL 用 REAL；**读路径**强制 `decimal_scan`（与 06 §D11 一致，不在 H1 改列类型） |
+| H1-C5 emotion_retrospect | 待在 H4 `pkg/validate` checklist schema 文档化；H1 仅在 manual 标注「预留位」 |
+
+---
+
 ## 七、本文档变更日志
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| v0.1.2 | 2026-05-22 | §D3/D5 MVP-1 补充决议采纳；H1-C7 字段字典体系 |
+| v0.1.1 | 2026-05-22 | §八 二次审阅补充；验证手册体系引用 |
 | v0.1 | 2026-05-22 | 集中 Review 决议落档：D1–D19，覆盖产品/投资/架构/代码四视角；文档冻结规则起算 |

@@ -92,6 +92,7 @@ func InitStateFiles(stateDir string) error {
 		{"candidates.yaml.example", "candidates.yaml"},
 		{"risk_rules.yaml.example", "risk_rules.yaml"},
 		{"personal_redlines.yaml.example", "personal_redlines.yaml"},
+		{"controlled_tags.yaml.example", "controlled_tags.yaml"},
 	}
 	root := ConfigRoot()
 	for _, p := range pairs {

@@ -35,10 +35,15 @@ inv doctor --scope library
 
 迁移目标路径：`$DATA_ROOT/accounts/{account_id}/db/assistant.sqlite`。
 
-## 版本
+## 维护规则
 
 - **v1**：Round 5 定稿；含 `id_sequences`、`sync_repairs` 及全部 MVP-1 业务表。
-- 变更须新增 `002_*.up.sql`，**禁止**修改已发布 up 文件。
+- 变更须新增 `002_*.up.sql`，**禁止**修改已发布 up 文件（H1 期间 001 微调已结束并冻结）。
+
+## Go struct 映射
+
+每张表对应 `internal/core/store/sqlstore/schema/*.go`，字段中文注释见 struct。  
+用户向说明见 `docs/manual/ref-sqlite-decision-tables.md`。
 - ⚠️ **H1 期间例外窗口**（截至 H1 完成、首次写入真实数据前）：
   尚未在任何 account 生产数据上跑过 buy/sell approve，因此 `001_initial.up.sql` **仍允许在
   H1 期间做兼容性微调**（如 docs/06 §D8 追加 lots 复权字段）。

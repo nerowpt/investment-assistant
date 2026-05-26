@@ -5,7 +5,7 @@ package dataworker.v1;
 
 import "common/v1/provenance.proto";
 
-option go_package = "github.com/investment-assistant/proto/dataworker/v1;dataworkerv1";
+option go_package = "github.com/investment-assistant/investment-assistant/gen/go/dataworker/v1;dataworkerv1";
 
 // 外部数据采集服务（akshare 等）；不写入业务库
 service DataWorker {

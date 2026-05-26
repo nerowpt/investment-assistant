@@ -1,38 +1,63 @@
-# Copy to data/accounts/{account_id}/state/watchlist.yaml
-# SoT: watch pool (Q2A). watching items do NOT appear in portfolio.yaml.
+# =============================================================================
+# watchlist.yaml 示例（Layer A 观察池 SoT）
+# =============================================================================
+# 复制到：data/accounts/{account_id}/state/watchlist.yaml
+# 字段怎么填：docs/manual/ref-watchlist-yaml-fields.md
+# watching 不进 portfolio.yaml（Q2A）
+# =============================================================================
 
 schema_version: 1
 
 meta:
-  updated_at: "2026-05-19T10:00:00+08:00"
+  updated_at: "2026-05-19T10:00:00+08:00"   # 最后修改时间 ISO8601
 
 items:
-  - id: w_20260519_001
-    code: "688xxx"
-    name: 示例科创标的
+  - # ---------- 身份 ----------
+    id: w_20260519_001              # 必填。格式 w_{日期}_{序号}，系统生成
+    code: "688xxx"                  # 条件。股票代码；主题级观察可省略
+    name: 示例科创标的              # 必填
+
+    # watch_type 必填：stock | sector | theme | person | event
     watch_type: stock
+    # state 必填：watching（观察中）| removed（已移出）
     state: watching
+
+    # source_entry 必填：manual | passive_discovery | from_candidate | from_inspection
     source_entry: from_candidate
-    source_candidate_id: cand_20260519_002
+    source_candidate_id: cand_20260519_002   # from_candidate 时必填
+
+    # ---------- 观察逻辑（用户填，AI 不写结论） ----------
     watch_reason: 财报季行业对比中现金流改善，需验证订单持续性
     hypothesis: 若 Q2 订单与毛利率同步改善，可能进入景气上行阶段
-    key_metrics_to_watch:
+    key_metrics_to_watch:           # 必填，至少 1 项
       - 季度订单增速
       - 毛利率环比
       - 行业政策口径变化
     expected_trigger: 连续两季订单与毛利率改善，且估值分位仍低于历史中位
     invalid_condition: 订单增速转负或毛利率连续下滑
-    review_date: 2026-06-19
-    priority: medium
-    related_library_ids: []
-    related_positions: []
+
+    review_date: 2026-06-19         # 必填。下次复查 YYYY-MM-DD
+    priority: medium                # 可选：low | medium | high
+
+    related_library_ids: []         # 可选。L1 素材 id
+    related_positions: []           # 可选。关联持仓 code 列表
     created_at: "2026-05-19T10:00:00+08:00"
     notes: null
 
-  # Example: promoted to holding (kept for traceability)
+  # ---------- removed 示例：升级建仓后保留追溯 ----------
   # - id: w_20260518_001
   #   code: "002624"
+  #   name: 完美世界
+  #   watch_type: stock
   #   state: removed
+  #   source_entry: manual
+  #   watch_reason: "..."
+  #   hypothesis: "..."
+  #   key_metrics_to_watch: ["..."]
+  #   expected_trigger: "..."
+  #   invalid_condition: "..."
+  #   review_date: 2026-05-01
+  #   created_at: "2026-05-01T10:00:00+08:00"
   #   removed_at: "2026-05-18T15:00:00+08:00"
-  #   removed_reason: promoted_to_holding
-  #   promoted_journal_id: j_20260518_001
+  #   removed_reason: promoted_to_holding   # invalidated | no_longer_relevant | promoted_to_holding | merged | other
+  #   promoted_journal_id: j_20260518_001 # promoted_to_holding 时必填，且须在 SQLite journals 存在

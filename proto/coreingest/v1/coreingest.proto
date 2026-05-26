@@ -5,7 +5,7 @@ package coreingest.v1;
 
 import "common/v1/provenance.proto";
 
-option go_package = "github.com/investment-assistant/proto/coreingest/v1;coreingestv1";
+option go_package = "github.com/investment-assistant/investment-assistant/gen/go/coreingest/v1;coreingestv1";
 
 // L1 候选入库服务；唯一有权写 library_candidates 的 gRPC 入口
 service CoreIngest {

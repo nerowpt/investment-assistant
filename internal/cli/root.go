@@ -29,6 +29,9 @@ func NewRoot() *cobra.Command {
 	root.PersistentFlags().String("account", "", "account id（覆盖 IA_ACCOUNT_ID）")
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newDoctorCmd())
+	root.AddCommand(newLibraryCmd())
+	root.AddCommand(newTagsCmd())
+	root.AddCommand(newWorkerCmd())
 	return root
 }
 

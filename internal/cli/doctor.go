@@ -31,13 +31,18 @@ func newDoctorCmd() *cobra.Command {
 				return doctorLibrary(ac.DBPath)
 			case "portfolio":
 				return doctorPortfolio(ac)
+			case "watchlist":
+				return doctorWatchlist(ac)
 			case "all":
 				if err := doctorLibrary(ac.DBPath); err != nil {
 					return err
 				}
-				return doctorPortfolio(ac)
+				if err := doctorPortfolio(ac); err != nil {
+					return err
+				}
+				return doctorWatchlist(ac)
 			default:
-				return fmt.Errorf("暂支持 --scope library|portfolio|all，当前: %s", scope)
+				return fmt.Errorf("暂支持 --scope library|portfolio|watchlist|all，当前: %s", scope)
 			}
 		},
 	}
@@ -68,6 +73,11 @@ func doctorLibrary(dbPath string) error {
 		return fmt.Errorf("缺少表: %s", sqlstore.FormatMissing(missing))
 	}
 
+	libIssues := doctor.CheckLibrary(db)
+	if len(libIssues) > 0 {
+		return fmt.Errorf("library 校验失败:\n  - %s", strings.Join(libIssues, "\n  - "))
+	}
+
 	fmt.Printf("doctor OK (scope=library, schema_version=%s)\n", ver)
 	return nil
 }
@@ -90,6 +100,32 @@ func doctorPortfolio(ac *account.Context) error {
 	}
 
 	fmt.Println("doctor OK (scope=portfolio)")
+	return nil
+}
+
+func doctorWatchlist(ac *account.Context) error {
+	db, err := openMigratedDB(ac.DBPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	w, err := yamlstore.LoadWatchlist(ac.WatchlistPath())
+	if err != nil {
+		return fmt.Errorf("读取 watchlist.yaml: %w", err)
+	}
+
+	p, err := yamlstore.LoadPortfolio(ac.PortfolioPath())
+	if err != nil {
+		return fmt.Errorf("读取 portfolio.yaml: %w", err)
+	}
+
+	issues := doctor.CheckWatchlist(db, w, p)
+	if len(issues) > 0 {
+		return fmt.Errorf("watchlist 校验失败:\n  - %s", strings.Join(issues, "\n  - "))
+	}
+
+	fmt.Println("doctor OK (scope=watchlist)")
 	return nil
 }
 

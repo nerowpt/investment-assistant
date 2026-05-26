@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["data_worker*"]
+
+[project]
+name = "investment-assistant-data-worker"
+version = "0.1.0"
+description = "Python gRPC data-worker for investment-assistant"
+requires-python = ">=3.10"
+dependencies = [
+  "grpcio>=1.60",
+  "grpcio-tools>=1.60",
+  "protobuf>=4.25",
+  "akshare>=1.14",
+  "pandas>=2.0",
+]
+
+[project.scripts]
+data-worker = "data_worker.__main__:main"
+
+[tool.uv]
+dev-dependencies = []

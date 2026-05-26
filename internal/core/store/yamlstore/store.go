@@ -81,3 +81,61 @@ func (s *memoryPortfolioStore) Save(ctx context.Context, path string, p *Portfol
 	s.data[path] = clonePortfolio(p)
 	return nil
 }
+
+// WatchlistStore watchlist.yaml 仓储（03 §10B.3 SoT）。
+type WatchlistStore interface {
+	Load(ctx context.Context, path string) (*Watchlist, error)
+	Save(ctx context.Context, path string, w *Watchlist) error
+}
+
+// NewFileWatchlistStore 文件系统实现。
+func NewFileWatchlistStore() WatchlistStore {
+	return &fileWatchlistStore{}
+}
+
+type fileWatchlistStore struct{}
+
+func (s *fileWatchlistStore) Load(ctx context.Context, path string) (*Watchlist, error) {
+	w, err := LoadWatchlist(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return w, nil
+}
+
+func (s *fileWatchlistStore) Save(ctx context.Context, path string, w *Watchlist) error {
+	return SaveWatchlist(path, w)
+}
+
+// NewMemoryWatchlistStore 内存实现（仅测试用）。
+func NewMemoryWatchlistStore() WatchlistStore {
+	return &memoryWatchlistStore{data: map[string]*Watchlist{}}
+}
+
+type memoryWatchlistStore struct {
+	mu   sync.RWMutex
+	data map[string]*Watchlist
+}
+
+func (s *memoryWatchlistStore) Load(ctx context.Context, path string) (*Watchlist, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	w, ok := s.data[path]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	return cloneWatchlist(w), nil
+}
+
+func (s *memoryWatchlistStore) Save(ctx context.Context, path string, w *Watchlist) error {
+	if w == nil {
+		return errors.New("yamlstore: nil watchlist")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data[path] = cloneWatchlist(w)
+	return nil
+}

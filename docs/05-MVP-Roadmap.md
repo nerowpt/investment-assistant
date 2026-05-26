@@ -61,8 +61,10 @@ gantt
 | 里程碑 | 状态 | 说明 |
 |---|---|---|
 | H0 | ✅ 完成 | `inv version`、`doctor --scope library`、migrations v1 |
-| H1 | 🔄 进行中 | yamlstore portfolio、原子写、`EnsureInitialized`、`doctor --scope portfolio` |
-| H2–H7 | 未开始 | 见 §四 |
+| H1 | ✅ 完成 | portfolio + watchlist yamlstore、doctor 三 scope、字段字典 |
+| H2 | ✅ 完成 | library CLI + tags + doctor library 扩展 |
+| H3 | ✅ 完成 | data-worker gRPC + supervisor + CoreIngest |
+| H4–H7 | 未开始 | 见 §四 |
 
 ---
 

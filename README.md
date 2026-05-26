@@ -76,14 +76,17 @@
 | 阶段 4 | [04-技术架构](docs/04-技术架构.md) | ✅ v0.6 定稿 |
 | 阶段 5 | [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) | ✅ v0.1 定稿 |
 | Review | [06-架构Review决议](docs/06-架构Review决议.md) | ✅ v0.1（D1–D19，2026-05-22） |
-| **编码** | H0 ✅ → **H1** | 🔄 进行中（P0 已落地：decimal_scan / Monitoring / PortfolioStore） |
+| **验证手册** | [07-接口与验证手册](docs/07-接口与验证手册.md) + [docs/manual/](docs/manual/) | 🔄 H0/H1 已写 |
+| **编码** | H0–H2 ✅ · **H3 ✅** → H4 | data-worker gRPC + supervisor |
 
 ### 当前编码重点
 
 > 详见 [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) §四 H1、§八。
 
-- [x] H0：`inv version` + migrate + `doctor --scope library`
-- [ ] H1：YAML 读写 + `doctor --scope portfolio`
+- [x] H1：`inv doctor --scope portfolio|watchlist|all` + 字段字典
+- [x] H2：`inv library …` + `inv tags …`
+- [x] H3：`inv worker …` + Python data-worker
+- [ ] H4：checklist draft/submit
 
 ---
 
@@ -106,6 +109,13 @@ investment-assistant/
     ├── 04-技术架构.md                       ← 阶段 4 定稿 v0.6
     ├── 05-MVP-Roadmap.md                    ← 阶段 5 定稿 v0.1
     ├── 06-架构Review决议.md                  ← 2026-05-22 Review v0.1（D1–D19）
+    ├── 07-接口与验证手册.md                  ← 接口说明总纲 + 验收 DoD
+    └── manual/                              ← 逐步操作手册（演进为用户文档）
+        ├── 00-环境与快速开始.md
+        ├── ref-portfolio-yaml-fields.md     ← portfolio 字段怎么填
+        ├── ref-sqlite-decision-tables.md    ← journals/lots 等表说明
+        ├── H0-骨架与迁移.md
+        └── H1-portfolio与doctor.md
 ```
 
 ---
@@ -119,6 +129,7 @@ investment-assistant/
 5. **基线变化**：如果用户的持仓、理念、巡检结论变了，必须同步更新 `docs/_baseline/` 下对应文档
 6. **决策冲突**：如果新讨论与既有决策冲突，必须显式说明冲突内容并要求用户裁决
 7. **中文注释**：Go/Python/proto/SQL 须简体中文注释，见 `.cursor/rules/chinese-comments.mdc` 与 `docs/04` §二A
+8. **功能验收**：每完成一个可调用功能，必须更新 [`docs/manual/`](docs/manual/) 接口说明（见 [`docs/07-接口与验证手册.md`](docs/07-接口与验证手册.md)）
 
 ---
 
