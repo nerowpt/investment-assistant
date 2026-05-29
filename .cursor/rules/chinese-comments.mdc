@@ -12,7 +12,7 @@ alwaysApply: true
 | 类型 | 要求 |
 |---|---|
 | **Go** | 导出符号须有中文 `//` 注释；复杂逻辑块用中文说明意图 |
-| **Go 结构体** | 与 03 YAML/SQLite schema 对齐的类型：**每个字段**行尾或行上中文注释（业务含义 + 可选文档章节） |
+| **Go 结构体** | 与 **docs/02 / docs/03** schema 对齐的类型（含 YAML、SQLite、**Checklist payload JSON**）：**每个字段**行尾或行上中文注释（业务含义 + 可选文档章节） |
 | **Go 未导出函数** | 非 trivial 的 `func xxx()` **必须**有中文注释，说明职责与对齐的 doctor/用例规则 |
 | **Python** | 模块 docstring、类/函数说明用中文；类型 hint 保留英文 |
 | **Protobuf** | 每个 `service`/`rpc`/`message`/重要字段用中文 `//` 注释 |
@@ -34,9 +34,11 @@ alwaysApply: true
 3. **AI 边界**：MCP、worker 相关代码须注释「只读 / 不下结论 / 不写入结论字段」。
 4. **简洁**：一行能说完不写段落；非 obvious 的才写。
 
-## 结构体字段（对齐 docs/03 schema）
+## 结构体字段（对齐 docs/02 / docs/03 schema）
 
-实现 `yamlstore`、`domain`、SQL 行扫描等类型时，字段须与 03 字段字典一一对应并加中文注释：
+实现 `yamlstore`、`domain`、SQL 行扫描、**Checklist payload 解析**等类型时，字段须与字段字典一一对应并加中文注释：
+
+### Layer A YAML / SQLite（docs/03）
 
 ```go
 // PortfolioPosition 单标的持仓视图（Layer A SoT；历史流水在 SQLite）。
@@ -47,8 +49,21 @@ type PortfolioPosition struct {
 }
 ```
 
+### Checklist payload JSON（docs/02 §十六）
+
+**视同 schema 对齐类型**，不得因「只是 JSON 解析中间 struct」而省略字段注释。典型位置：`internal/core/checklist/payload.go` 的 `BuyPayload`、`AddPayload`、`WatchPayload` 等。
+
+```go
+// BuyPayload 建仓 checklist payload 子集（02 §16.2）。
+type BuyPayload struct {
+	PositionType     string  `json:"position_type"`     // 仓位类型：core 主仓 | swing 波段
+	InvestmentThesis string  `json:"investment_thesis"` // 持有逻辑全文，approve 后写入 portfolio
+	PositionSizePlan map[string]any `json:"position_size_plan"` // initial_pct 用于 M7 与 lot.initial_pct
+}
+```
+
 - 注释写**业务含义**，不复述字段英文名。
-- 可括号引用 `03 §10B.2`、`Q2A` 等。
+- 可括号引用 `02 §16.x`、`03 §10B.2`、`Q2A` 等。
 - 金额/比例字段注释中可注明「Go 层用 decimal 读写」。
 
 ## 未导出函数

@@ -3,7 +3,7 @@ package migrations
 
 import "embed"
 
-// UpFS 包含所有 *.up.sql 迁移（当前仅 001_initial）。
+// UpFS 包含所有 *.up.sql 迁移（001 基线 + 002+ 增量）。
 //
 //go:embed *.up.sql
 var UpFS embed.FS

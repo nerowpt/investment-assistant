@@ -1,0 +1,28 @@
+{
+  "source_entry": "manual",
+  "position_type": "core",
+  "buy_reason_summary": "业绩稳健、渠道改革见效，估值仍处合理区间",
+  "investment_thesis": "高端白酒龙头，批价企稳，长期现金流确定性强",
+  "expected_return_driver": ["earnings_growth", "valuation_repair"],
+  "target_price": 1800,
+  "target_price_exception_reason": null,
+  "stop_loss": 1400,
+  "stop_loss_exception_reason": null,
+  "reversal_conditions": ["批价连续两季度下滑", "渠道库存异常升高"],
+  "position_size_plan": {
+    "initial_pct": 5,
+    "max_pct": 10,
+    "add_condition": "季报验证批价继续上行",
+    "reduce_condition": "达到目标价区间上沿且 thesis 未增强"
+  },
+  "opportunity_cost_benchmark": "HS300",
+  "confidence": "medium",
+  "emotion_tag": "calm",
+  "identified_risks": ["宏观消费疲软", "政策风险"],
+  "related_library_ids": [],
+  "no_library_reason": "基于公开财报与个人渠道调研，暂无合适 L1 素材归档",
+  "tier_acknowledgement": false,
+  "narrative_stage_assessment_id": null,
+  "notes": "H4 手册示例 payload",
+  "emotion_retrospect": null
+}

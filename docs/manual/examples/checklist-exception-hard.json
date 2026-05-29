@@ -1,0 +1,8 @@
+{
+  "triggered_rule_id": "m7_single_stock",
+  "exception_reason": "本次拟建仓 5% 叠加已有 12% 持仓将略超 15% 单标的 hard_block 阈值。经复核：该标的为长期核心配置，当前估值分位低于历史中位数，且已设置明确 reversal_conditions 与 stop_loss。我接受集中度上升风险，并承诺在 review_date 前重新评估是否减仓至 10% 以内。",
+  "expected_compensation": "若 2026-06-30 前批价未达预期或 thesis 被 reversal_conditions 触发，我将主动减仓至 10% 以下并写复盘 journal。",
+  "review_date": "2026-06-30",
+  "library_item_ids": ["lib_20260519_001"],
+  "confirm_text": "我已阅读 S/A 依据，理解集中度风险，自愿承担后果"
+}

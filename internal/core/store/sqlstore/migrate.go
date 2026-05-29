@@ -32,7 +32,7 @@ func Open(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
-// MigrateUp 应用嵌入的 up 迁移（幂等：表已存在则跳过 DDL 错误由 IF NOT EXISTS 吸收）。
+// MigrateUp 应用嵌入的 up 迁移（001 幂等；002+ 按 schema_meta 追踪，列变更可重复执行）。
 func MigrateUp(db *sql.DB) error {
 	content, err := fs.ReadFile(migrations.UpFS, initialMigration)
 	if err != nil {
@@ -41,7 +41,88 @@ func MigrateUp(db *sql.DB) error {
 	if _, err := db.Exec(string(content)); err != nil {
 		return fmt.Errorf("执行迁移: %w", err)
 	}
+	if err := migrateLotsD8Columns(db); err != nil {
+		return err
+	}
 	return nil
+}
+
+const migration002 = "002_lots_d8_columns"
+
+// migrateLotsD8Columns 为旧版 lots 表补 docs/06 §D8 分红/复权列（幂等）。
+func migrateLotsD8Columns(db *sql.DB) error {
+	applied, err := migrationApplied(db, migration002)
+	if err != nil {
+		return err
+	}
+	if applied {
+		return nil
+	}
+	cols := []struct{ name, typ string }{
+		{"dividends_received", "REAL"},
+		{"adjusted_cost_basis", "REAL"},
+		{"corporate_actions_json", "TEXT"},
+	}
+	for _, c := range cols {
+		if err := addColumnIfMissing(db, "lots", c.name, c.typ); err != nil {
+			return fmt.Errorf("迁移 %s lots.%s: %w", migration002, c.name, err)
+		}
+	}
+	if err := markMigrationApplied(db, migration002); err != nil {
+		return err
+	}
+	_, _ = db.Exec(`UPDATE schema_meta SET value = '2' WHERE key = 'schema_version'`)
+	return nil
+}
+
+func migrationApplied(db *sql.DB, name string) (bool, error) {
+	var v string
+	err := db.QueryRow(`SELECT value FROM schema_meta WHERE key = ?`, "migration:"+name).Scan(&v)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return v == "1", nil
+}
+
+func markMigrationApplied(db *sql.DB, name string) error {
+	_, err := db.Exec(`INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, '1')`, "migration:"+name)
+	return err
+}
+
+func addColumnIfMissing(db *sql.DB, table, column, colType string) error {
+	has, err := tableHasColumn(db, table, column)
+	if err != nil {
+		return err
+	}
+	if has {
+		return nil
+	}
+	_, err = db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, colType))
+	return err
+}
+
+func tableHasColumn(db *sql.DB, table, column string) (bool, error) {
+	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, typ string
+		var notNull, pk int
+		var dflt any
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &dflt, &pk); err != nil {
+			return false, err
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 // SchemaVersion 读取 schema_meta.schema_version。

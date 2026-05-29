@@ -14,6 +14,8 @@
 | [ref-portfolio-yaml-fields.md](ref-portfolio-yaml-fields.md) | **portfolio.yaml 每个字段** + 枚举可选值 + 示例 |
 | [ref-watchlist-yaml-fields.md](ref-watchlist-yaml-fields.md) | **watchlist.yaml 每个字段** + 枚举可选值 |
 | [ref-sqlite-decision-tables.md](ref-sqlite-decision-tables.md) | **journals / lots 等 SQLite 表** + SQL 示例 |
+| [examples/checklist-buy-600519.json](examples/checklist-buy-600519.json) | **buy checklist payload 完整示例** |
+| [examples/checklist-exception-hard.json](examples/checklist-exception-hard.json) | **hard_block 例外 JSON 示例** |
 | [config/portfolio.yaml.example](../../config/portfolio.yaml.example) | 带行内中文注释的模板 |
 | [internal/.../schema/README.md](../../internal/core/store/sqlstore/schema/README.md) | Go struct 与表映射（IDE 悬停） |
 
@@ -24,7 +26,10 @@
 3. [H0-骨架与迁移.md](H0-骨架与迁移.md)
 4. [H1-portfolio与doctor.md](H1-portfolio与doctor.md)
 5. [ref-sqlite-decision-tables.md](ref-sqlite-decision-tables.md) — 理解 journals/lots
-6. 后续按 [07 §五](../07-接口与验证手册.md#五功能项索引与状态) 里程碑追加
+6. [H2-library归纳流水线.md](H2-library归纳流水线.md) · [H3-data-worker-gRPC.md](H3-data-worker-gRPC.md)
+7. [H4-checklist与M7.md](H4-checklist与M7.md)
+8. [H5-checklist-approve.md](H5-checklist-approve.md)
+9. 后续按 [07 §五](../07-接口与验证手册.md#五功能项索引与状态) 里程碑追加
 
 ## 给协作者
 

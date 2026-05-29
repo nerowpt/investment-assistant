@@ -86,6 +86,16 @@ func (c *Context) ControlledTagsPath() string {
 	return filepath.Join(c.StateDir, "controlled_tags.yaml")
 }
 
+// RiskRulesPath 返回 risk_rules.yaml 路径。
+func (c *Context) RiskRulesPath() string {
+	return filepath.Join(c.StateDir, "risk_rules.yaml")
+}
+
+// PersonalRedlinesPath 返回 personal_redlines.yaml 路径。
+func (c *Context) PersonalRedlinesPath() string {
+	return filepath.Join(c.StateDir, "personal_redlines.yaml")
+}
+
 // RunDir 返回运行时目录（worker.port、supervisor 状态）。
 func (c *Context) RunDir() string {
 	return filepath.Join(c.DataRoot, ".run")

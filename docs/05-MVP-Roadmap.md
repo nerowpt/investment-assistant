@@ -64,7 +64,9 @@ gantt
 | H1 | ✅ 完成 | portfolio + watchlist yamlstore、doctor 三 scope、字段字典 |
 | H2 | ✅ 完成 | library CLI + tags + doctor library 扩展 |
 | H3 | ✅ 完成 | data-worker gRPC + supervisor + CoreIngest |
-| H4–H7 | 未开始 | 见 §四 |
+| H4 | ✅ 完成 | checklist draft/submit + M7 + risk_exceptions |
+| H5 | ✅ 完成 | approve 流水线：journal/lot/snapshot + portfolio/watchlist + sync_repairs |
+| H6–H7 | 未开始 | 见 §四 |
 
 ---
 
@@ -201,15 +203,15 @@ gantt
 | 项 | 内容 |
 |---|---|
 | **工期** | 2 周 |
-| **交付** | `inv checklist draft|submit|show|list`；七类 payload 校验（`pkg/validate`）；`domain/risk` 护栏模拟；`risk_exceptions` 预写；**不** approve |
+| **交付** | `inv checklist draft|submit|show|list`；七类 payload 校验；`domain/risk` 护栏模拟；`risk_exceptions` 预写；**不** approve |
 | **依赖** | H1 + H3（snapshot 事实区可占位） |
 | **关联** | 02 §十六；S2/S2a 建仓/加仓入口 |
 | **验收清单** | |
-| | ☐ buy checklist 缺 `initial_pct` submit 失败 |
-| | ☐ C/D tier 缺 `tier_acknowledgement` submit 失败 |
-| | ☐ 触发 hard_block 时 status=submitted 但 approve 门禁（H5 接） |
-| | ☐ `emotion_tag` fomo/greedy/anxious → 二次确认文案 |
-| | ☐ payload 持久化到 `checklist_submissions.payload_json` |
+| | ☑ buy checklist 缺 `initial_pct` submit 失败 |
+| | ☑ C/D tier 缺 `tier_acknowledgement` submit 失败 |
+| | ☑ 触发 hard_block 时 status=submitted 但 approve 门禁（H5 接） |
+| | ☑ `emotion_tag` fomo/greedy/anxious → 二次确认文案 |
+| | ☑ payload 持久化到 `checklist_submissions.payload_json` |
 
 ---
 
@@ -222,12 +224,12 @@ gantt
 | **依赖** | H4 + H3 + H2 |
 | **关联** | E4/E5/E6/E8；03 §10B.7 同步矩阵 |
 | **验收清单** | |
-| | ☐ buy approve 后：SQLite journal + lot + yaml position 一致 |
-| | ☐ snapshot 含 FetchQuote/Valuation 事实（tier 标注） |
-| | ☐ yaml 写失败 → SQL 不回滚，`sync_repairs` 有记录，doctor 报错 |
-| | ☐ approve 后 checklist.status=approved，`generated_journal_id` 回填 |
-| | ☐ `inv doctor --scope all` 通过 |
-| | ☐ import + `legacy_over_limit` 路径（S0.5） |
+| | ☑ buy approve 后：SQLite journal + lot + yaml position 一致 |
+| | ☑ snapshot 含 FetchQuote/Valuation 事实（tier 标注） |
+| | ☑ yaml 写失败 → SQL 不回滚，`sync_repairs` 有记录，doctor 报错 |
+| | ☑ approve 后 checklist.status=approved，`generated_journal_id` 回填 |
+| | ☑ `inv doctor --scope all` 通过（空库或一致数据下） |
+| | ☑ import + `legacy_over_limit` 路径（S0.5） |
 
 ---
 

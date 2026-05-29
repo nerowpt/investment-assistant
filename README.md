@@ -77,7 +77,7 @@
 | 阶段 5 | [05-MVP-Roadmap](docs/05-MVP-Roadmap.md) | ✅ v0.1 定稿 |
 | Review | [06-架构Review决议](docs/06-架构Review决议.md) | ✅ v0.1（D1–D19，2026-05-22） |
 | **验证手册** | [07-接口与验证手册](docs/07-接口与验证手册.md) + [docs/manual/](docs/manual/) | 🔄 H0/H1 已写 |
-| **编码** | H0–H2 ✅ · **H3 ✅** → H4 | data-worker gRPC + supervisor |
+| **编码** | H0–H3 ✅ → **H4 ✅** → H5 | checklist draft/submit + M7 |
 
 ### 当前编码重点
 
@@ -86,7 +86,8 @@
 - [x] H1：`inv doctor --scope portfolio|watchlist|all` + 字段字典
 - [x] H2：`inv library …` + `inv tags …`
 - [x] H3：`inv worker …` + Python data-worker
-- [ ] H4：checklist draft/submit
+- [x] H4：`inv checklist draft|submit|show|list` + M7
+- [ ] H5：checklist approve 流水线
 
 ---
 
