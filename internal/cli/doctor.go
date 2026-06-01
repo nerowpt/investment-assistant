@@ -96,7 +96,7 @@ func doctorPortfolio(ac *account.Context) error {
 
 	issues := doctor.CheckPortfolio(db, p)
 	if len(issues) > 0 {
-		return fmt.Errorf("portfolio 校验失败:\n  - %s", strings.Join(issues, "\n  - "))
+		return fmt.Errorf("portfolio 校验失败 (%d 项):\n%s", len(issues), doctor.FormatIssues(issues))
 	}
 
 	fmt.Println("doctor OK (scope=portfolio)")

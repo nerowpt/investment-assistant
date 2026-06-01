@@ -1,0 +1,15 @@
+{
+  "linked_buy_journal_id": "j_YYYYMMDD_NNN",
+  "add_trigger": "thesis_strengthened",
+  "add_reason_summary": "季报验证批价继续上行，按计划加仓",
+  "thesis_change": "strengthened",
+  "add_pct": 3,
+  "max_pct_after_add": 10,
+  "execution_price": 1720,
+  "shares": 50,
+  "emotion_tag": "calm",
+  "related_library_ids": [],
+  "tier_acknowledgement": false,
+  "notes": "将 linked_buy_journal_id 替换为首次 buy approve 产生的 journal id（sqlite 或 checklist list --status approved --type buy）",
+  "emotion_retrospect": null
+}

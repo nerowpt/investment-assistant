@@ -45,8 +45,8 @@ func TestMigrateUpAddsLotsD8Columns(t *testing.T) {
 		t.Fatalf("migration 002 not marked applied: %v", err)
 	}
 	ver, _ := SchemaVersion(db)
-	if ver != "2" {
-		t.Fatalf("schema_version=%q want 2", ver)
+	if ver != "3" {
+		t.Fatalf("schema_version=%q want 3", ver)
 	}
 
 	// 幂等：再跑不应报错

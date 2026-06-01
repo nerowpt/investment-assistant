@@ -12,7 +12,8 @@ func TestValidateBuyMissingInitialPct(t *testing.T) {
   "target_price":10,"stop_loss":8,"reversal_conditions":["a"],
   "position_size_plan":{"max_pct":10},
   "opportunity_cost_benchmark":"HS300","confidence":"medium","emotion_tag":"calm",
-  "identified_risks":["r"],"no_library_reason":"个人判断","emotion_retrospect":null
+  "identified_risks":["r"],"no_library_reason":"个人判断",
+  "execution_price":10,"shares":100,"emotion_retrospect":null
 }`
 	err := ValidatePayload(nil, "buy", "600519", payload)
 	if err == nil || err.Error() != "buy payload 缺少 position_size_plan.initial_pct" {
@@ -29,7 +30,7 @@ func TestValidateBuyTierAck(t *testing.T) {
   "position_size_plan":{"initial_pct":5,"max_pct":10},
   "opportunity_cost_benchmark":"HS300","confidence":"medium","emotion_tag":"calm",
   "identified_risks":["r"],"related_library_ids":["lib_x"],
-  "tier_acknowledgement":false,"emotion_retrospect":null
+  "tier_acknowledgement":false,"execution_price":10,"shares":100,"emotion_retrospect":null
 }`
 	err := ValidatePayload(nil, "buy", "600519", payload)
 	if err != nil {

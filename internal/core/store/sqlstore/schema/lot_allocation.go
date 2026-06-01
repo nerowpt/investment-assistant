@@ -17,8 +17,14 @@ type LotAllocation struct {
 	CostBasisAtSale string `db:"cost_basis_at_sale"`
 	// ProceedsPct 卖出所得占组合比例（可选，逻辑 DECIMAL）。
 	ProceedsPct string `db:"proceeds_pct"`
-	// RealizedReturnPct 该 allocation 实现收益（逻辑 DECIMAL）。
+	// RealizedReturnPct 该 allocation 实现收益率 %（逻辑 DECIMAL）。
 	RealizedReturnPct string `db:"realized_return_pct"`
+	// AllocatedShares 本次从该 lot 卖出的股数（B 模型；逻辑 DECIMAL）。
+	AllocatedShares string `db:"allocated_shares"`
+	// ProceedsAmount 卖出所得金额（元）= execution_price × allocated_shares。
+	ProceedsAmount string `db:"proceeds_amount"`
+	// RealizedPnLAmount 实现盈亏（元）= (成交价 - 成本) × 股数。
+	RealizedPnLAmount string `db:"realized_pnl_amount"`
 	// MatchMethod recommended_fifo | user_adjusted。
 	MatchMethod string `db:"match_method"`
 	// UserConfirmed 用户是否确认匹配，0/1。

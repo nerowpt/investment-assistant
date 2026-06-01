@@ -90,12 +90,29 @@ inv checklist draft --type buy|watch|add|inspect|sell|review|import
                     [--file <payload.json>] [--json]
 ```
 
+### `--type` 枚举说明
+
+> 完整说明（何时用、前置条件、approve 产物）→ **[ref-checklist-types.md](ref-checklist-types.md)**  
+> 端到端流程（先 buy 再什么）→ **[01-操作流程总览.md](01-操作流程总览.md)**
+
+| `--type` | 中文名 | 什么时候用 | approve 后 |
+|---|---|---|---|
+| `buy` | 建仓 | 首次买入，建立持仓 | portfolio **holding** + 新 lot |
+| `add` | 加仓 | 已有 holding，追加买入 | 新 lot，股数/成本累加 |
+| `sell` | 卖出 | 减仓或清仓 | lot_allocations + portfolio 减仓（见 H6） |
+| `watch` | 观察池 | 感兴趣但尚未买 | watchlist.yaml 新条目 |
+| `inspect` | 巡检 | 定期检视持仓逻辑 | inspection_records |
+| `review` | 复盘 | 总结教训 | review_reports |
+| `import` | 存量导入 | 一次性导入历史仓 | 多条 journal/lot（非日常流） |
+
+**共用流水线**：`draft` → `submit`（M7）→ `approve`（落库）。仅 payload 字段与 approve 产物因 type 而异。
+
 ### 入参
 
 | 参数 | 必填 | 说明 |
 |---|---|---|
-| `--type` | 是 | checklist 类型 |
-| `--code` | buy/add 等建议填 | 标的代码，如 `600519` |
+| `--type` | 是 | 上表之一；决定表单模板与 M7 场景 |
+| `--code` | buy/add/sell 等建议填 | 标的代码，如 `600519` |
 | `--name` | 否 | 标的名称，如 `贵州茅台` |
 | `--file` | 否 | 完整 payload JSON 路径；**推荐**直接用示例文件 |
 | `--json` | 否 | 输出 `{ "ID": "cs_…", "Status": "draft" }` |
@@ -225,7 +242,50 @@ hard_block:
 | 码 | 场景 |
 |---|---|
 | 0 | submit 成功 |
-| 1 | 校验 / M7 / 参数错误 |
+| 1 | 参数 / 校验 / M7 错误 |
+
+---
+
+## 接口 2b：`inv checklist reject`
+
+### 签名
+
+```text
+inv checklist reject <cs_id> --reason "<作废原因>" [--json]
+```
+
+### 说明
+
+- 将 **draft** 或 **submitted** checklist 作废为 `rejected`（**不可逆**）
+- **不能**把 buy 改成 add；type 在 draft 时已固定。误建 buy 时 reject 后 **新建** `--type add`
+- `approved` 不可 reject；已落库修正须走新 submission
+
+### 入参
+
+| 参数 | 必填 | 说明 |
+|---|---|---|
+| `<cs_id>` | 是 | 要作废的 checklist id |
+| `--reason` | 是 | 作废原因（写入 payload `_reject_meta`） |
+| `--json` | 否 | 结构化输出 |
+
+### 成功输出
+
+**场景：误 submit 了 buy，标的已在 holding**
+
+```powershell
+.\bin\inv.exe checklist reject cs_20260529_001 --reason "误建 buy，600519 已在 holding，改走 add"
+```
+
+```text
+reject OK: id=cs_20260529_001 status=rejected reason=误建 buy，600519 已在 holding，改走 add
+提示: rejected 不可 approve；修正须新建 draft（如误建 buy 改走 add）
+```
+
+### 失败输出
+
+```text
+Error: 已 approved 不可 reject（须走新 submission 修正）
+```
 
 ---
 
@@ -272,6 +332,8 @@ cs_20260526_001	buy	600519	submitted	2026-05-26T10:00:00+08:00	2026-05-26T10:05:
 ```json
 {
   "position_size_plan": { "initial_pct": 5, "max_pct": 10 },
+  "execution_price": 1680,
+  "shares": 100,
   "emotion_tag": "calm",
   "related_library_ids": [],
   "no_library_reason": "基于公开财报与个人渠道调研，暂无合适 L1 素材归档",
@@ -280,7 +342,7 @@ cs_20260526_001	buy	600519	submitted	2026-05-26T10:00:00+08:00	2026-05-26T10:05:
 }
 ```
 
-> **注意**：`draft` 只校验 JSON 合法 + `emotion_retrospect` 存在；**完整必填字段在 `submit` 时校验**。
+> **注意**：`execution_price`、`shares` 为实际成交价与股数，**须手动填写**（系统不联动券商）。`draft` 只校验 JSON 合法 + `emotion_retrospect` 存在；**完整必填字段在 `submit` 时校验**。
 
 ---
 
@@ -376,5 +438,7 @@ go test ./internal/core/risk/... -v
 
 ## 相关文档
 
+- [01-操作流程总览.md](01-操作流程总览.md) — **先做什么、再做什么、分叉怎么走**
+- [ref-checklist-types.md](ref-checklist-types.md) — `--type` 枚举权威说明
 - [ref-sqlite-decision-tables.md](ref-sqlite-decision-tables.md) — `checklist_submissions` / `risk_exceptions` 表
 - [H2-library归纳流水线.md](H2-library归纳流水线.md) — 获取 `lib_*` 供 `related_library_ids`

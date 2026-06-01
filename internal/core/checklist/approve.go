@@ -62,7 +62,7 @@ func (s *Service) Approve(ctx context.Context, checklistID string) (*ApproveResu
 	case "import":
 		return s.approveImport(ctx, cs)
 	case "sell":
-		return nil, fmt.Errorf("sell approve 在 H6 实现（lot FIFO）")
+		return s.approveSell(ctx, cs)
 	default:
 		return nil, fmt.Errorf("未支持的 checklist_type: %s", cs.ChecklistType)
 	}
@@ -120,16 +120,25 @@ func (s *Service) approveBuy(ctx context.Context, cs *schema.ChecklistSubmission
 		return nil, err
 	}
 
-	costBasis := decimal.Zero
-	if s.market != nil {
-		if price, _, _, _, qErr := s.market.FetchQuote(ctx, cs.Code); qErr == nil {
-			costBasis = decimal.NewFromFloat(price)
-		}
+	costBasis := decimal.NewFromFloat(payload.ExecutionPrice)
+	shares := decimal.NewFromFloat(payload.Shares)
+	if costBasis.LessThanOrEqual(decimal.Zero) {
+		return nil, fmt.Errorf("buy payload.execution_price 须 > 0（实际成交价，手动填写）")
+	}
+	if shares.LessThanOrEqual(decimal.Zero) {
+		return nil, fmt.Errorf("buy payload.shares 须 > 0")
 	}
 	now := nowISO()
 	today := time.Now().Format("2006-01-02")
 	initPctStr := initialPct.StringFixed(4)
 	costStr := costBasis.StringFixed(4)
+	sharesStr := shares.StringFixed(0)
+
+	port, _ := yamlstore.LoadPortfolio(s.ac.PortfolioPath())
+	portPatch, err := BuildBuyPortfolioPatch(port, cs, payload, journalID, lotID, costBasis, shares, initialPct)
+	if err != nil {
+		return nil, err
+	}
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -155,7 +164,7 @@ func (s *Service) approveBuy(ctx context.Context, cs *schema.ChecklistSubmission
 		ID: lotID, Code: cs.Code, Name: cs.Name, JournalID: journalID,
 		ActionType: schema.JournalActionBuy, PositionType: payload.PositionType,
 		OpenAt: today, InitialPct: initPctStr, CurrentPct: initPctStr,
-		CostBasis: costStr, Status: schema.LotStatusOpen, CreatedAt: now,
+		CostBasis: costStr, Shares: sharesStr, Status: schema.LotStatusOpen, CreatedAt: now,
 	}); err != nil {
 		return nil, err
 	}
@@ -169,12 +178,7 @@ func (s *Service) approveBuy(ctx context.Context, cs *schema.ChecklistSubmission
 		return nil, err
 	}
 
-	port, _ := yamlstore.LoadPortfolio(s.ac.PortfolioPath())
-	port, err = BuildBuyPortfolioPatch(port, cs, payload, journalID, lotID, costBasis, initialPct)
-	if err != nil {
-		return nil, err
-	}
-	bundle := &YamlBundle{Portfolio: port}
+	bundle := &YamlBundle{Portfolio: portPatch}
 	res := &ApproveResult{
 		ChecklistID: cs.ID, JournalID: journalID, LotID: lotID, SnapshotID: snapID,
 	}
@@ -193,6 +197,14 @@ func (s *Service) approveAdd(ctx context.Context, cs *schema.ChecklistSubmission
 		return nil, err
 	}
 	addPct := decimal.NewFromFloat(payload.AddPct)
+	execPrice := decimal.NewFromFloat(payload.ExecutionPrice)
+	addShares := decimal.NewFromFloat(payload.Shares)
+	if execPrice.LessThanOrEqual(decimal.Zero) {
+		return nil, fmt.Errorf("add payload.execution_price 须 > 0（实际成交价，手动填写）")
+	}
+	if addShares.LessThanOrEqual(decimal.Zero) {
+		return nil, fmt.Errorf("add payload.shares 须 > 0")
+	}
 	snapJSON, err := BuildBuySnapshot(ctx, cs.Code, s.market)
 	if err != nil {
 		return nil, err
@@ -214,9 +226,20 @@ func (s *Service) approveAdd(ctx context.Context, cs *schema.ChecklistSubmission
 	now := nowISO()
 	today := time.Now().Format("2006-01-02")
 	pctStr := addPct.StringFixed(4)
+	costStr := execPrice.StringFixed(4)
+	sharesStr := addShares.StringFixed(0)
 	posType := payload.PositionType
 	if posType == "" {
 		posType = "core"
+	}
+
+	port, err := yamlstore.LoadPortfolio(s.ac.PortfolioPath())
+	if err != nil {
+		return nil, err
+	}
+	portPatch, err := BuildAddPortfolioPatch(port, cs, payload, journalID, lotID, addPct, execPrice, addShares)
+	if err != nil {
+		return nil, err
 	}
 
 	tx, err := s.db.Begin()
@@ -243,7 +266,7 @@ func (s *Service) approveAdd(ctx context.Context, cs *schema.ChecklistSubmission
 		ID: lotID, Code: cs.Code, Name: cs.Name, JournalID: journalID,
 		ActionType: schema.JournalActionAdd, PositionType: posType,
 		OpenAt: today, InitialPct: pctStr, CurrentPct: pctStr,
-		CostBasis: "0", Status: schema.LotStatusOpen,
+		CostBasis: costStr, Shares: sharesStr, Status: schema.LotStatusOpen,
 		LinkedBuyJournalID: payload.LinkedBuyJournalID, CreatedAt: now,
 	}); err != nil {
 		return nil, err
@@ -258,15 +281,7 @@ func (s *Service) approveAdd(ctx context.Context, cs *schema.ChecklistSubmission
 		return nil, err
 	}
 
-	port, err := yamlstore.LoadPortfolio(s.ac.PortfolioPath())
-	if err != nil {
-		return nil, err
-	}
-	port, err = BuildAddPortfolioPatch(port, cs, payload, journalID, lotID, addPct)
-	if err != nil {
-		return nil, err
-	}
-	bundle := &YamlBundle{Portfolio: port}
+	bundle := &YamlBundle{Portfolio: portPatch}
 	res := &ApproveResult{
 		ChecklistID: cs.ID, JournalID: journalID, LotID: lotID, SnapshotID: snapID,
 	}
@@ -291,6 +306,12 @@ func (s *Service) approveWatch(ctx context.Context, cs *schema.ChecklistSubmissi
 	}
 	now := nowISO()
 
+	wl, _ := yamlstore.LoadWatchlist(s.ac.WatchlistPath())
+	wlPatch, err := BuildWatchlistPatch(wl, cs, payload, watchID)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return nil, err
@@ -303,12 +324,7 @@ func (s *Service) approveWatch(ctx context.Context, cs *schema.ChecklistSubmissi
 		return nil, err
 	}
 
-	wl, _ := yamlstore.LoadWatchlist(s.ac.WatchlistPath())
-	wl, err = BuildWatchlistPatch(wl, cs, payload, watchID)
-	if err != nil {
-		return nil, err
-	}
-	bundle := &YamlBundle{Watchlist: wl}
+	bundle := &YamlBundle{Watchlist: wlPatch}
 	res := &ApproveResult{ChecklistID: cs.ID, WatchID: watchID}
 	if err := ApplyYamlBundle(s.ac, bundle); err != nil {
 		srID, _ := RecordSyncRepair(s.db, s.ac, cs.ID, "", bundle, err)

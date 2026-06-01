@@ -57,7 +57,8 @@ func buyPayloadJSON() string {
   "position_size_plan":{"initial_pct":5,"max_pct":10},
   "opportunity_cost_benchmark":"HS300","confidence":"medium","emotion_tag":"calm",
   "identified_risks":["风险A"],"related_library_ids":[],
-  "no_library_reason":"测试无 L1","tier_acknowledgement":false,"emotion_retrospect":null
+  "no_library_reason":"测试无 L1","tier_acknowledgement":false,
+  "execution_price":1500,"shares":500,"emotion_retrospect":null
 }`
 }
 
@@ -158,5 +159,69 @@ func TestApproveBlockedWithoutException(t *testing.T) {
 	_, err = svc.Approve(context.Background(), id)
 	if err == nil {
 		t.Fatal("expected approve gate error")
+	}
+}
+
+func TestApproveBuyFailsWhenAlreadyHolding(t *testing.T) {
+	ac, db, svc := setupChecklistTest(t)
+
+	first, err := svc.CreateDraft(DraftInput{
+		ChecklistType: "buy", Code: "600519", Name: "贵州茅台", PayloadJSON: buyPayloadJSON(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Submit(SubmitInput{ID: first.ID}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Approve(context.Background(), first.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := svc.CreateDraft(DraftInput{
+		ChecklistType: "buy", Code: "600519", Name: "贵州茅台", PayloadJSON: buyPayloadJSON(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Submit(SubmitInput{ID: second.ID}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.Approve(context.Background(), second.ID)
+	if err == nil {
+		t.Fatal("expected duplicate buy error")
+	}
+
+	cs, err := sqlstore.GetChecklistSubmission(db, second.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cs.Status != "submitted" {
+		t.Fatalf("status=%s want submitted (SQL must not commit on yaml guard fail)", cs.Status)
+	}
+	if cs.GeneratedJournalID != "" {
+		t.Fatalf("unexpected journal=%s", cs.GeneratedJournalID)
+	}
+
+	var journalCount int
+	if err := db.QueryRow(`SELECT COUNT(1) FROM journals WHERE code='600519'`).Scan(&journalCount); err != nil {
+		t.Fatal(err)
+	}
+	if journalCount != 1 {
+		t.Fatalf("journal count=%d want 1", journalCount)
+	}
+
+	port, err := yamlstore.LoadPortfolio(ac.PortfolioPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	holdingLots := 0
+	for _, p := range port.Positions {
+		if p.Code == "600519" && p.State == "holding" {
+			holdingLots = len(p.LotIDs)
+		}
+	}
+	if holdingLots != 1 {
+		t.Fatalf("portfolio lot_ids=%d want 1", holdingLots)
 	}
 }

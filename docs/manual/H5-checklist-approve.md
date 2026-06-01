@@ -12,7 +12,22 @@
 
 > 📖 **架构权威**：[04 §二十](../04-技术架构.md) ApproveChecklist 流水线  
 > 📄 **前置**：[H4-checklist与M7.md](H4-checklist与M7.md)（须先 draft → submit）  
+> 📄 **流程总览**：[01-操作流程总览.md](01-操作流程总览.md)  
 > 📄 **buy 示例**：[examples/checklist-buy-600519.json](examples/checklist-buy-600519.json)
+
+---
+
+## 记账字段（手动填写）
+
+本系统**不联动券商**，无法自动获取实际成交价。approve 时：
+
+| 类型 | 必填字段 | 用途 |
+|---|---|---|
+| buy | `execution_price`（元/股）、`shares`（股数） | 写入 `lots.cost_basis`、`lots.shares` |
+| add | 同上 | 新 lot + portfolio 加权成本 |
+| sell | `execution_price`、`sell_shares` | FIFO 分配 + `lot_allocations` 盈亏金额 |
+
+`position_size_plan.initial_pct` / `add_pct` 仍用于 **M7 仓位风控**；`data_snapshots` 中的 worker 行情仅为决策时点**参考**，**不参与** cost_basis 计算。
 
 ---
 
@@ -44,7 +59,7 @@ $env:IA_CONFIG_ROOT = ".\config"
 ```
 
 - [ ] 至少一条 **status=submitted** 的 checklist（见 H4 步骤）
-- [ ] approve buy/add 时建议 worker 可用（自动拉 snapshot；不可用时 snapshot 仍写入，但带 `quote_error`）
+- [ ] approve buy/add 时须已在 payload 填写 **execution_price + shares**（见上节）；worker 可选，仅写入 snapshot 参考行情
 
 ```powershell
 .\bin\inv.exe worker health
@@ -140,6 +155,8 @@ hard_block:
 Error: 600519 已在 holding，应走 add checklist
 ```
 
+> approve **失败时** checklist 保持 `submitted`，不会写入 journal/lot（业务校验在 SQL commit 之前）。
+
 ---
 
 ## approve 各类型行为
@@ -152,7 +169,7 @@ Error: 600519 已在 holding，应走 add checklist
 | `inspect` | inspection_records | 无 |
 | `review` | review_reports | 无 |
 | `import` | 多 journal/lot | portfolio 批量 positions |
-| `sell` | — | **H6 实现** |
+| `sell` | journal + allocations + snapshot | portfolio ↓pct 或 closed（**H6**） |
 
 ---
 
@@ -268,7 +285,7 @@ go test ./internal/core/checklist/... -v
 | 现象 | 处理 |
 |---|---|
 | `worker 未就绪` | 先 `inv worker health`；snapshot 仍可写入但缺 quote |
-| `已在 holding，应走 add` | 该 code 已有 holding position，改用 `--type add` |
+| `已在 holding，应走 add` | reject 误建的 buy → 新建 `draft --type add`（见 [checklist-add-600519.json](examples/checklist-add-600519.json)） |
 | `sync_repair=sr_*` | SQL 已提交；检查 portfolio 路径权限，修复 YAML 后重跑 doctor |
 | approve 后 doctor lot_ids 不一致 | 勿手改 portfolio.lot_ids；以 approve 输出为准 |
 | `sell approve 在 H6 实现` | 正常，卖出流水线下一里程碑 |

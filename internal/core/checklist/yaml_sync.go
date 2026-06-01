@@ -68,7 +68,7 @@ func RecordSyncRepair(db *sql.DB, ac *account.Context, checklistID, journalID st
 }
 
 // BuildBuyPortfolioPatch 新建 holding position（buy approve）。
-func BuildBuyPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmission, payload *BuyPayload, journalID, lotID string, costBasis decimal.Decimal, initialPct decimal.Decimal) (*yamlstore.Portfolio, error) {
+func BuildBuyPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmission, payload *BuyPayload, journalID, lotID string, costBasis, shares, initialPct decimal.Decimal) (*yamlstore.Portfolio, error) {
 	if port == nil {
 		port = &yamlstore.Portfolio{SchemaVersion: yamlstore.PortfolioSchemaVersion}
 	}
@@ -78,6 +78,7 @@ func BuildBuyPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmi
 		}
 	}
 	today := time.Now().Format("2006-01-02")
+	sh := shares
 	pos := yamlstore.PortfolioPosition{
 		Code:                     cs.Code,
 		Name:                     cs.Name,
@@ -85,6 +86,7 @@ func BuildBuyPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmi
 		PositionType:             payload.PositionType,
 		PositionPct:              initialPct,
 		CostBasis:                costBasis,
+		Shares:                   &sh,
 		EntryDate:                today,
 		ThesisVersion:            1,
 		InvestmentThesis:         payload.InvestmentThesis,
@@ -102,8 +104,8 @@ func BuildBuyPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmi
 	return port, nil
 }
 
-// BuildAddPortfolioPatch 加仓更新 position_pct 与 lot_ids。
-func BuildAddPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmission, payload *AddPayload, journalID, lotID string, addPct decimal.Decimal) (*yamlstore.Portfolio, error) {
+// BuildAddPortfolioPatch 加仓更新 position_pct、shares 与加权成本。
+func BuildAddPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmission, payload *AddPayload, journalID, lotID string, addPct, execPrice, addShares decimal.Decimal) (*yamlstore.Portfolio, error) {
 	if port == nil {
 		return nil, fmt.Errorf("portfolio 不存在，无法 add")
 	}
@@ -111,7 +113,14 @@ func BuildAddPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmi
 	for i, p := range port.Positions {
 		if p.Code == cs.Code && p.State == "holding" {
 			found = true
+			oldShares := decimal.Zero
+			if p.Shares != nil {
+				oldShares = *p.Shares
+			}
+			newShares := oldShares.Add(addShares)
 			port.Positions[i].PositionPct = p.PositionPct.Add(addPct)
+			port.Positions[i].CostBasis = WeightedAvgCost(p.CostBasis, oldShares, execPrice, addShares)
+			port.Positions[i].Shares = &newShares
 			port.Positions[i].LotIDs = append(p.LotIDs, lotID)
 			port.Positions[i].JournalIDs = append(p.JournalIDs, journalID)
 			if payload.InvestmentThesis != "" {
@@ -123,6 +132,48 @@ func BuildAddPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmi
 	}
 	if !found {
 		return nil, fmt.Errorf("%s 不在 holding，应走 buy checklist", cs.Code)
+	}
+	return port, nil
+}
+
+// BuildSellPortfolioPatch 卖出后更新 shares、position_pct 或 closed（股数 B 模型）。
+func BuildSellPortfolioPatch(port *yamlstore.Portfolio, cs *schema.ChecklistSubmission, payload *SellPayload, journalID string, sellShares decimal.Decimal) (*yamlstore.Portfolio, error) {
+	if port == nil {
+		return nil, fmt.Errorf("portfolio 不存在，无法 sell")
+	}
+	found := false
+	today := time.Now().Format("2006-01-02")
+	for i, p := range port.Positions {
+		if p.Code != cs.Code || p.State != "holding" {
+			continue
+		}
+		found = true
+		totalShares := decimal.Zero
+		if p.Shares != nil {
+			totalShares = *p.Shares
+		}
+		if totalShares.LessThan(sellShares) {
+			return nil, fmt.Errorf("%s sell_shares=%s 超过持仓股数 %s",
+				cs.Code, sellShares.String(), totalShares.String())
+		}
+		newShares := totalShares.Sub(sellShares)
+		sellPct := SellPctFromShares(p.PositionPct, totalShares, sellShares)
+		newPct := p.PositionPct.Sub(sellPct)
+		port.Positions[i].JournalIDs = append(p.JournalIDs, journalID)
+		if newShares.IsZero() || payload.SellType == "full" {
+			zero := decimal.Zero
+			port.Positions[i].Shares = &zero
+			port.Positions[i].PositionPct = decimal.Zero
+			port.Positions[i].State = "closed"
+			port.Positions[i].ClosedAt = today
+		} else {
+			port.Positions[i].Shares = &newShares
+			port.Positions[i].PositionPct = newPct
+		}
+		break
+	}
+	if !found {
+		return nil, fmt.Errorf("%s 不在 holding，无法 sell", cs.Code)
 	}
 	return port, nil
 }

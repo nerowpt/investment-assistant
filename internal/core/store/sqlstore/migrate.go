@@ -44,6 +44,37 @@ func MigrateUp(db *sql.DB) error {
 	if err := migrateLotsD8Columns(db); err != nil {
 		return err
 	}
+	if err := migrateLotAllocationShares(db); err != nil {
+		return err
+	}
+	return nil
+}
+
+const migration003 = "003_lot_allocation_shares"
+
+// migrateLotAllocationShares 为 lot_allocations 补股数/金额盈亏列（B 模型）。
+func migrateLotAllocationShares(db *sql.DB) error {
+	applied, err := migrationApplied(db, migration003)
+	if err != nil {
+		return err
+	}
+	if applied {
+		return nil
+	}
+	cols := []struct{ name, typ string }{
+		{"allocated_shares", "REAL"},
+		{"proceeds_amount", "REAL"},
+		{"realized_pnl_amount", "REAL"},
+	}
+	for _, c := range cols {
+		if err := addColumnIfMissing(db, "lot_allocations", c.name, c.typ); err != nil {
+			return fmt.Errorf("迁移 %s lot_allocations.%s: %w", migration003, c.name, err)
+		}
+	}
+	if err := markMigrationApplied(db, migration003); err != nil {
+		return err
+	}
+	_, _ = db.Exec(`UPDATE schema_meta SET value = '3' WHERE key = 'schema_version'`)
 	return nil
 }
 

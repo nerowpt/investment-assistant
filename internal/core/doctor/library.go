@@ -3,7 +3,6 @@ package doctor
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/investment-assistant/investment-assistant/internal/core/store/sqlstore"
 )
@@ -64,12 +63,4 @@ func CheckLibrary(db *sql.DB) []string {
 	}
 
 	return issues
-}
-
-// FormatIssues 格式化 issue 列表。
-func FormatIssues(issues []string) string {
-	if len(issues) == 0 {
-		return ""
-	}
-	return strings.Join(issues, "\n  - ")
 }

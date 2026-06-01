@@ -1,0 +1,16 @@
+{
+  "sell_type": "reduce",
+  "sell_trigger": "target_reached",
+  "sell_reason": "target_achieved",
+  "sell_reason_detail": "达到目标价区间，按计划减仓",
+  "sell_shares": 50,
+  "execution_price": 1750,
+  "linked_buy_journal_ids": [],
+  "thesis_result": "partially_validated",
+  "thesis_result_explanation": "逻辑仍成立，先兑现部分收益",
+  "emotion_tag": "calm",
+  "is_panic_sell": false,
+  "lesson": "按计划分批止盈，避免 FOMO 持有",
+  "lot_allocation_plan": [],
+  "emotion_retrospect": null
+}

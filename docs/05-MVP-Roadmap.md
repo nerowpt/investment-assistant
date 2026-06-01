@@ -66,7 +66,8 @@ gantt
 | H3 | ✅ 完成 | data-worker gRPC + supervisor + CoreIngest |
 | H4 | ✅ 完成 | checklist draft/submit + M7 + risk_exceptions |
 | H5 | ✅ 完成 | approve 流水线：journal/lot/snapshot + portfolio/watchlist + sync_repairs |
-| H6–H7 | 未开始 | 见 §四 |
+| H6 | ✅ 完成 | sell + lot FIFO + lot_allocations + plan/set-payload CLI |
+| H7 | 未开始 | 见 §四 |
 
 ---
 
@@ -242,10 +243,10 @@ gantt
 | **依赖** | H5 |
 | **关联** | 03 §10A.7 Q4C；S5 卖出 |
 | **验收清单** | |
-| | ☐ 多 open lot 卖出：系统推荐 FIFO，用户可改 |
-| | ☐ `lot_allocations.match_method` = recommended_fifo / user_adjusted |
-| | ☐ 卖完后 lot.status=closed，portfolio lot_ids 同步 |
-| | ☐ `realized_return_pct` 用 decimal 计算，单测覆盖边界 |
+| | ☑ 多 open lot 卖出：系统推荐 FIFO，用户可改 |
+| | ☑ `lot_allocations.match_method` = recommended_fifo / user_adjusted |
+| | ☑ 卖完后 lot.status=closed/partial，portfolio 同步 |
+| | ☑ `realized_return_pct` 用 decimal 计算，单测覆盖 |
 
 ---
 

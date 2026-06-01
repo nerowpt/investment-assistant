@@ -17,11 +17,14 @@ import (
 func newChecklistCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "checklist",
-		Short: "决策 Checklist（H4 draft/submit + H5 approve）",
+		Short: "决策 Checklist（draft/submit/reject/approve + H6 sell plan）",
 	}
 	cmd.AddCommand(
 		newChecklistDraftCmd(),
 		newChecklistSubmitCmd(),
+		newChecklistRejectCmd(),
+		newChecklistPlanCmd(),
+		newChecklistSetPayloadCmd(),
 		newChecklistApproveCmd(),
 		newChecklistShowCmd(),
 		newChecklistListCmd(),
@@ -124,6 +127,99 @@ func newChecklistSubmitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&emotionCheck, "emotion-check", "", "fomo/greedy/anxious 二次确认文案")
 	cmd.Flags().StringVar(&exceptionFile, "exception-file", "", "hard/soft 例外说明 JSON 文件")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON 输出")
+	return cmd
+}
+
+func newChecklistRejectCmd() *cobra.Command {
+	var reason string
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "reject [id]",
+		Short: "作废 draft/submitted checklist（→ rejected，不可逆）",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, db, svc, err := openChecklistService(cmd)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			res, err := svc.Reject(chksvc.RejectInput{ID: args[0], Reason: reason})
+			if err != nil {
+				return err
+			}
+			if asJSON {
+				return printJSON(res)
+			}
+			fmt.Printf("reject OK: id=%s status=%s reason=%s\n", res.ID, res.Status, res.Reason)
+			fmt.Println("提示: rejected 不可 approve；修正须新建 draft（如误建 buy 改走 add）")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&reason, "reason", "", "作废原因（必填）")
+	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON 输出")
+	return cmd
+}
+
+func newChecklistPlanCmd() *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "plan [id]",
+		Short: "sell checklist：预览 FIFO lot 分配计划（Q4C）",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, db, svc, err := openChecklistService(cmd)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			res, err := svc.PlanSell(args[0])
+			if err != nil {
+				return err
+			}
+			if asJSON {
+				return printJSON(res)
+			}
+			fmt.Printf("plan OK: checklist=%s code=%s sell_shares=%s execution_price=%s match=%s\n",
+				res.ChecklistID, res.Code, res.SellShares, res.ExecutionPrice, res.MatchMethod)
+			for _, it := range res.Plan {
+				fmt.Printf("  lot=%s allocated_shares=%.0f user_adjusted=%v\n",
+					it.LotID, it.AllocatedShares, it.UserAdjusted)
+			}
+			fmt.Println("提示: 调整 plan 后使用 checklist set-payload --file 写回，再 approve")
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON 输出")
+	return cmd
+}
+
+func newChecklistSetPayloadCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-payload [id]",
+		Short: "更新 draft/submitted checklist 的 payload_json",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			file, _ := cmd.Flags().GetString("file")
+			if file == "" {
+				return fmt.Errorf("须指定 --file")
+			}
+			raw, err := os.ReadFile(file)
+			if err != nil {
+				return err
+			}
+			_, db, svc, err := openChecklistService(cmd)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			if err := svc.SetPayload(args[0], string(raw)); err != nil {
+				return err
+			}
+			fmt.Printf("set-payload OK: id=%s\n", args[0])
+			return nil
+		},
+	}
+	cmd.Flags().String("file", "", "完整 payload JSON 文件路径")
 	return cmd
 }
 

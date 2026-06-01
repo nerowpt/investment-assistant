@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/investment-assistant/investment-assistant/internal/core/lot"
 	"github.com/investment-assistant/investment-assistant/internal/core/store/sqlstore"
+	"github.com/shopspring/decimal"
 )
 
 const PayloadSchemaVersion = 1
@@ -61,7 +63,7 @@ func ValidatePayload(db *sql.DB, checklistType, code, payloadJSON string) error 
 	case "inspect":
 		return validateInspect(raw)
 	case "sell":
-		return validateSell(raw)
+		return validateSell(db, code, raw)
 	case "review":
 		return validateReview(raw)
 	case "import":
@@ -76,7 +78,7 @@ func validateBuy(db *sql.DB, code string, raw map[string]any) error {
 		"source_entry", "position_type", "buy_reason_summary", "investment_thesis",
 		"expected_return_driver", "target_price", "stop_loss", "reversal_conditions",
 		"position_size_plan", "opportunity_cost_benchmark", "confidence", "emotion_tag",
-		"identified_risks",
+		"identified_risks", "execution_price", "shares",
 	}
 	for _, k := range req {
 		if !hasKey(raw, k) {
@@ -92,6 +94,12 @@ func validateBuy(db *sql.DB, code string, raw map[string]any) error {
 	}
 	if !hasNumber(plan, "max_pct") {
 		return fmt.Errorf("buy payload 缺少 position_size_plan.max_pct")
+	}
+	if !hasNumber(raw, "execution_price") || numberVal(raw["execution_price"]) <= 0 {
+		return fmt.Errorf("execution_price 须 > 0（实际成交价，手动填写）")
+	}
+	if !hasNumber(raw, "shares") || numberVal(raw["shares"]) <= 0 {
+		return fmt.Errorf("shares 须 > 0")
 	}
 	drivers, ok := raw["expected_return_driver"].([]any)
 	if !ok || len(drivers) == 0 {
@@ -126,6 +134,7 @@ func validateAdd(db *sql.DB, raw map[string]any) error {
 	req := []string{
 		"linked_buy_journal_id", "add_trigger", "add_reason_summary",
 		"thesis_change", "add_pct", "max_pct_after_add", "emotion_tag",
+		"execution_price", "shares",
 	}
 	for _, k := range req {
 		if !hasKey(raw, k) {
@@ -134,6 +143,12 @@ func validateAdd(db *sql.DB, raw map[string]any) error {
 	}
 	if !hasNumber(raw, "add_pct") {
 		return fmt.Errorf("add_pct 须为数字")
+	}
+	if !hasNumber(raw, "execution_price") || numberVal(raw["execution_price"]) <= 0 {
+		return fmt.Errorf("execution_price 须 > 0（实际成交价，手动填写）")
+	}
+	if !hasNumber(raw, "shares") || numberVal(raw["shares"]) <= 0 {
+		return fmt.Errorf("shares 须 > 0")
 	}
 	libIDs := stringList(raw["related_library_ids"])
 	if len(libIDs) > 0 {
@@ -167,15 +182,96 @@ func validateInspect(raw map[string]any) error {
 	return nil
 }
 
-func validateSell(raw map[string]any) error {
+func validateSell(db *sql.DB, code string, raw map[string]any) error {
 	for _, k := range []string{
-		"sell_type", "sell_trigger", "sell_reason", "sell_pct", "emotion_tag", "lesson",
+		"sell_type", "sell_trigger", "sell_reason", "sell_shares", "execution_price",
+		"emotion_tag", "lesson",
 	} {
 		if !hasKey(raw, k) {
 			return fmt.Errorf("sell payload 缺少必填字段: %s", k)
 		}
 	}
+	if !hasNumber(raw, "sell_shares") || numberVal(raw["sell_shares"]) <= 0 {
+		return fmt.Errorf("sell_shares 须 > 0")
+	}
+	if !hasNumber(raw, "execution_price") || numberVal(raw["execution_price"]) <= 0 {
+		return fmt.Errorf("execution_price 须 > 0（实际成交价，手动填写）")
+	}
+	sellShares := decimal.NewFromFloat(numberVal(raw["sell_shares"]))
+	if db != nil && code != "" {
+		openLots, err := loadOpenLotsForValidate(db, code)
+		if err != nil {
+			return err
+		}
+		sum := decimal.Zero
+		for _, l := range openLots {
+			sum = sum.Add(l.CurrentShares)
+		}
+		if sum.LessThan(sellShares) {
+			return fmt.Errorf("sell_shares=%s 超过 open lot 可卖股数 %s", sellShares.String(), sum.String())
+		}
+	}
+	if planRaw, ok := raw["lot_allocation_plan"].([]any); ok && len(planRaw) > 0 {
+		if db == nil || code == "" {
+			return nil
+		}
+		openLots, err := loadOpenLotsForValidate(db, code)
+		if err != nil {
+			return err
+		}
+		plan := payloadMapToPlanItemsShares(planRaw, openLots)
+		if err := lot.ValidatePlanShares(sellShares, openLots, plan); err != nil {
+			return fmt.Errorf("lot_allocation_plan: %w", err)
+		}
+	}
 	return nil
+}
+
+func payloadMapToPlanItemsShares(planRaw []any, openLots []lot.OpenLot) []lot.PlanItem {
+	byID := map[string]lot.OpenLot{}
+	for _, l := range openLots {
+		byID[l.ID] = l
+	}
+	var plan []lot.PlanItem
+	for _, it := range planRaw {
+		m, ok := it.(map[string]any)
+		if !ok {
+			continue
+		}
+		shares := decimal.NewFromFloat(numberVal(m["allocated_shares"]))
+		pct := decimal.NewFromFloat(numberVal(m["allocated_pct"]))
+		lotID := strVal(m["lot_id"])
+		if ol, ok := byID[lotID]; ok {
+			if shares.IsZero() && !pct.IsZero() && !ol.CurrentPct.IsZero() {
+				shares = ol.CurrentShares.Mul(pct).Div(ol.CurrentPct)
+			}
+			if pct.IsZero() && !shares.IsZero() && !ol.CurrentShares.IsZero() {
+				pct = ol.CurrentPct.Mul(shares).Div(ol.CurrentShares)
+			}
+		}
+		plan = append(plan, lot.PlanItem{
+			LotID:           lotID,
+			AllocatedShares: shares,
+			AllocatedPct:    pct,
+			UserAdjusted:    boolVal(m["user_adjusted"]),
+		})
+	}
+	return plan
+}
+
+func loadOpenLotsForValidate(db *sql.DB, code string) ([]lot.OpenLot, error) {
+	rows, err := sqlstore.ListOpenLotsByCode(db, code)
+	if err != nil {
+		return nil, err
+	}
+	var out []lot.OpenLot
+	for _, l := range rows {
+		cp, _ := decimal.NewFromString(l.CurrentPct)
+		sh, _ := decimal.NewFromString(l.Shares)
+		cb, _ := decimal.NewFromString(l.CostBasis)
+		out = append(out, lot.OpenLot{ID: l.ID, Code: l.Code, OpenAt: l.OpenAt, CurrentPct: cp, CurrentShares: sh, CostBasis: cb})
+	}
+	return out, nil
 }
 
 func validateReview(raw map[string]any) error {

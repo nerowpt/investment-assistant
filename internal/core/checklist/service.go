@@ -245,10 +245,24 @@ func DefaultPayloadTemplate(checklistType string) string {
   "related_library_ids": [],
   "no_library_reason": null,
   "tier_acknowledgement": false,
+  "execution_price": 0,
+  "shares": 0,
   "emotion_retrospect": null
 }`,
 		"watch": `{"watch_reason":"","hypothesis":"","review_date":"2026-06-30","priority":"medium","related_library_ids":[],"emotion_retrospect":null}`,
-		"add":   `{"linked_buy_journal_id":"","add_trigger":"thesis_strengthened","add_reason_summary":"","thesis_change":"strengthened","add_pct":3,"max_pct_after_add":10,"emotion_tag":"calm","related_library_ids":[],"tier_acknowledgement":false,"emotion_retrospect":null}`,
+		"add":   `{"linked_buy_journal_id":"","add_trigger":"thesis_strengthened","add_reason_summary":"","thesis_change":"strengthened","add_pct":3,"max_pct_after_add":10,"execution_price":0,"shares":0,"emotion_tag":"calm","related_library_ids":[],"tier_acknowledgement":false,"emotion_retrospect":null}`,
+		"sell": `{
+  "sell_type": "reduce",
+  "sell_trigger": "target_reached",
+  "sell_reason": "target_achieved",
+  "sell_reason_detail": "",
+  "sell_shares": 0,
+  "execution_price": 0,
+  "emotion_tag": "calm",
+  "lesson": "",
+  "lot_allocation_plan": [],
+  "emotion_retrospect": null
+}`,
 	}
 	if t, ok := templates[checklistType]; ok {
 		return t

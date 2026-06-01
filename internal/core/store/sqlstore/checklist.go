@@ -142,6 +142,23 @@ func UpdateChecklistSubmitted(db execer, id, riskJSON, exceptionJSON, emotionSel
 	return err
 }
 
+// UpdateChecklistRejected 作废 checklist（draft/submitted → rejected）。
+func UpdateChecklistRejected(db *sql.DB, id, payloadJSON string) error {
+	res, err := db.Exec(`
+		UPDATE checklist_submissions SET status = 'rejected', payload_json = ?
+		WHERE id = ? AND status IN ('draft', 'submitted')`,
+		payloadJSON, id,
+	)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("reject 失败：id=%s 非 draft/submitted 或不存在", id)
+	}
+	return nil
+}
+
 // ApproveChecklistUpdate approve 后更新 checklist 行。
 func ApproveChecklistUpdate(db execer, id, approvedAt, journalID, inspectionID, reviewID string) error {
 	_, err := db.Exec(`

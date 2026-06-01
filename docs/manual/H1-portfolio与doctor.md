@@ -77,6 +77,18 @@ inv doctor --scope portfolio [--account <id>]
 | `lot_ids` | 每条 id 在 SQLite `lots` 存在且 `code` 匹配 |
 | open lot 仓位之和 | `sum(lots.current_pct)` == `position.position_pct`（decimal 精度，禁 float） |
 
+### 错误码对照（portfolio scope）
+
+| 码 | 标题 | 含义（一句话） | 常见处理 |
+|---|---|---|---|
+| P001 | lot 引用断裂 | portfolio 写了 `lot_ids`，DB 无对应 lot | 删 YAML 中无效 id；或删 example 残留 position |
+| P002 | journal 引用断裂 | portfolio 写了 `journal_ids`，DB 无对应 journal | 同上，改 `journal_ids` |
+| P003 | lot 标的 code 不一致 | lot 在 DB 里属于另一只股票 | 从 `lot_ids` 移除错误 lot |
+| P004 | 仓位比例不一致 | YAML `position_pct` ≠ DB open lots 之和 | 以 lots 为准改 YAML；或清理误 approve 的多余 lot |
+| P010–P016 | YAML 自身约束 | schema、closed、watching 等 | 见 [ref-portfolio-yaml-fields.md](ref-portfolio-yaml-fields.md) |
+
+> 每条失败输出含 **发现**（事实）与 **处理**（可执行建议）；下方为完整样例。
+
 ### 成功输出
 
 **场景：空 portfolio（positions: []）且 DB 无引用**
@@ -92,20 +104,46 @@ doctor OK (scope=portfolio)
 **场景 A：example 模板 + 空数据库（当前默认情况）**
 
 ```text
-Error: portfolio 校验失败:
-  - 002624: lot_ids 引用不存在 lot_20260518_001
-  - 002624: lot_ids 引用不存在 lot_20260618_001
-  - journal_ids 引用不存在: j_20260518_001
-  - journal_ids 引用不存在: j_20260618_002
-  - 002624: sum(open lots.current_pct)=0 != position_pct=8
+Error: portfolio 校验失败 (5 项):
+  [1] P001 · 002624 · lot 引用断裂
+      发现: portfolio.yaml 的 lot_ids 含 lot_20260518_001，但 SQLite lots 表无此记录。
+      处理: 编辑 portfolio.yaml：从 002624 的 lot_ids 删除 lot_20260518_001；常见为 config 模板虚构 id…
+  [2] P002 · 002624 · journal 引用断裂
+      发现: portfolio.yaml 的 journal_ids 含 j_20260518_001，但 SQLite journals 表无此记录。
+      处理: …
+  [3] P004 · 002624 · 仓位比例不一致
+      发现: portfolio.position_pct=8，但 SQLite 中 open/partial lots 的 current_pct 之和=0。
+      处理: 以 lots 表为准修正 portfolio；若无真实持仓可设 positions: []。
 ```
 
-**场景 B：手改 YAML 把 closed 的 position_pct 改成非 0**
+**场景 B：误 approve 遗留 + YAML 未同步（600519 典型）**
 
 ```text
-Error: portfolio 校验失败:
-  - 600519: closed 标的 position_pct 应为 0
+  [1] P001 · 600519 · lot 引用断裂
+      发现: portfolio.yaml 的 lot_ids 含 lot_20260527_002，但 SQLite lots 表无此记录。
+      处理: 从 lot_ids/journal_ids 删除无效 id…
+  [2] P004 · 600519 · 仓位比例不一致
+      发现: portfolio.position_pct=5，但 SQLite open lots 之和=2.5。
+      处理: 以 lots 为准改 position_pct，或删除 DB 中多余 lot（见 H5 故障排查）。
 ```
+
+**场景 C：手改 YAML 把 closed 的 position_pct 改成非 0**
+
+```text
+Error: portfolio 校验失败 (1 项):
+  [1] P015 · 600519 · closed 仓位须为 0
+      发现: 600519: closed 标的 position_pct 应为 0
+      处理: 将 position_pct 改为 0，或若仍持仓则改 state=holding。
+```
+
+### 故障排查速查
+
+| 你的情况 | 建议 |
+|---|---|
+| 刚装完、从未 approve | 把 `portfolio.yaml` 的 `positions` 改为 `[]`，或删掉 example 里的虚构 id |
+| approve 报错但 DB 已有 lot | 旧版 bug 可能导致 SQL/YAML 分叉；对齐 lot_ids 与 `position_pct`，或手删孤儿 lot |
+| 只有 P004、引用 id 都对 | 改 `portfolio.position_pct` 等于 `SELECT SUM(current_pct) FROM lots WHERE code=? AND status IN ('open','partial')` |
+| 测试环境想重来 | [00-环境与快速开始.md](00-环境与快速开始.md) 重置 `data/accounts/default` |
 
 ### 退出码
 

@@ -19,6 +19,8 @@ type BuyPayload struct {
 	Confidence               string         `json:"confidence"`                 // 置信度：low | medium | high
 	RelatedLibraryIDs        []string       `json:"related_library_ids"`        // 支撑依据的 L1 素材 id（lib_*）
 	WatchlistOriginID        string         `json:"watchlist_origin_id"`        // 若从观察池升级，原 w_* id
+	ExecutionPrice           float64        `json:"execution_price"`            // 实际成交价（元/股）；记账 SoT，须手动填写
+	Shares                   float64        `json:"shares"`                     // 买入股数；记账 SoT，须手动填写
 }
 
 // AddPayload 加仓 checklist payload 子集（02 §16.4）。
@@ -29,6 +31,8 @@ type AddPayload struct {
 	InvestmentThesis   string         `json:"investment_thesis"`     // 更新后的持有逻辑；非空时 portfolio.thesis_version +1
 	RelatedLibraryIDs  []string       `json:"related_library_ids"`   // 本次加仓引用的 L1 素材 id
 	PositionSizePlan   map[string]any `json:"position_size_plan"`    // 加仓后仓位计划（max_pct 等，可选）
+	ExecutionPrice     float64        `json:"execution_price"`       // 实际成交价（元/股）；须手动填写
+	Shares             float64        `json:"shares"`                // 加仓股数；须手动填写
 }
 
 // WatchPayload 观察 checklist payload 子集（02 §16.1）。
@@ -42,6 +46,37 @@ type WatchPayload struct {
 	Priority          string   `json:"priority"`             // 优先级：low | medium | high
 	RelatedLibraryIDs []string `json:"related_library_ids"`  // 关联 L1 素材 id
 	SourceEntry       string   `json:"source_entry"`         // 入口来源；空则 approve 时写 manual
+}
+
+// SellPayload 卖出 checklist payload 子集（02 §16.5）。
+type SellPayload struct {
+	SellType           string                   `json:"sell_type"`            // reduce 减仓 | full 清仓
+	SellTrigger        string                   `json:"sell_trigger"`         // 触发类型：target_reached / thesis_broken 等
+	SellReason         string                   `json:"sell_reason"`          // 卖出理由分类
+	SellReasonDetail   string                   `json:"sell_reason_detail"`   // 理由详情（可选）
+	SellPct            float64                  `json:"sell_pct"`             // 可选；系统自动由 sell_shares 推算，供 M7/portfolio
+	SellShares         float64                  `json:"sell_shares"`          // 卖出股数；记账 SoT，须手动填写
+	ExecutionPrice     float64                  `json:"execution_price"`      // 实际卖出成交价（元/股）；须手动填写
+	EmotionTag         string                   `json:"emotion_tag"`          // 情绪标签
+	Lesson             string                   `json:"lesson"`               // 本次卖出教训
+	LotAllocationPlan  []LotAllocationPlanItem  `json:"lot_allocation_plan"`  // Q4C lot 匹配计划；空则 approve 时 FIFO 生成
+}
+
+// LotAllocationPlanItem payload 中 lot 分配单项（02 §16.5 lot_allocation_plan[]）。
+type LotAllocationPlanItem struct {
+	LotID           string  `json:"lot_id"`            // lot_* id
+	AllocatedShares float64 `json:"allocated_shares"`  // 从该 lot 扣减的股数（B 模型主字段）
+	AllocatedPct    float64 `json:"allocated_pct"`     // 兼容旧 payload；有 allocated_shares 时由系统推算
+	UserAdjusted    bool    `json:"user_adjusted"`     // 用户是否改动 FIFO 推荐
+}
+
+// ParseSellPayload 从 payload_json 解析 sell 字段。
+func ParseSellPayload(payloadJSON string) (*SellPayload, error) {
+	var p SellPayload
+	if err := json.Unmarshal([]byte(payloadJSON), &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
 }
 
 // ParseBuyPayload 从 payload_json 解析 buy 字段。
