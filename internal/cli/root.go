@@ -33,6 +33,9 @@ func NewRoot() *cobra.Command {
 	root.AddCommand(newChecklistCmd())
 	root.AddCommand(newTagsCmd())
 	root.AddCommand(newWorkerCmd())
+	root.AddCommand(newBackupCmd())
+	root.AddCommand(newMCPCmd())
+	root.AddCommand(newServeCmd())
 	return root
 }
 

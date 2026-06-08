@@ -114,3 +114,95 @@ func LotExists(db *sql.DB, id string) (bool, error) {
 	err := db.QueryRow(`SELECT COUNT(1) FROM lots WHERE id = ?`, id).Scan(&n)
 	return n > 0, err
 }
+
+// JournalRow journals 列表/详情查询行。
+type JournalRow struct {
+	ID                    string
+	ActionType            string
+	Code                  string
+	Name                  string
+	ChecklistSubmissionID string
+	DataSnapshotID        string
+	Summary               string
+	LotID                 string
+	CreatedAt             string
+}
+
+// SearchJournals 按标的/动作检索 journal（MCP/CLI 只读）。
+func SearchJournals(db *sql.DB, code, actionType string, limit int) ([]JournalRow, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	q := `SELECT id, action_type, COALESCE(code,''), COALESCE(name,''),
+		COALESCE(checklist_submission_id,''), COALESCE(data_snapshot_id,''),
+		COALESCE(summary,''), COALESCE(lot_id,''), created_at
+		FROM journals WHERE 1=1`
+	var args []any
+	if code != "" {
+		q += ` AND code = ?`
+		args = append(args, code)
+	}
+	if actionType != "" {
+		q += ` AND action_type = ?`
+		args = append(args, actionType)
+	}
+	q += ` ORDER BY created_at DESC LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []JournalRow
+	for rows.Next() {
+		var r JournalRow
+		if err := rows.Scan(&r.ID, &r.ActionType, &r.Code, &r.Name, &r.ChecklistSubmissionID,
+			&r.DataSnapshotID, &r.Summary, &r.LotID, &r.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// GetJournal 按 id 读取 journal。
+func GetJournal(db *sql.DB, id string) (*JournalRow, error) {
+	row := db.QueryRow(`SELECT id, action_type, COALESCE(code,''), COALESCE(name,''),
+		COALESCE(checklist_submission_id,''), COALESCE(data_snapshot_id,''),
+		COALESCE(summary,''), COALESCE(lot_id,''), created_at
+		FROM journals WHERE id = ?`, id)
+	var r JournalRow
+	err := row.Scan(&r.ID, &r.ActionType, &r.Code, &r.Name, &r.ChecklistSubmissionID,
+		&r.DataSnapshotID, &r.Summary, &r.LotID, &r.CreatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// GetJournalPayload 读取 journal payload_json。
+func GetJournalPayload(db *sql.DB, id string) (string, error) {
+	var s string
+	err := db.QueryRow(`SELECT payload_json FROM journals WHERE id = ?`, id).Scan(&s)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return s, err
+}
+
+// GetDataSnapshotSummary 读取 snapshot_json（MCP 返回摘要时可截断）。
+func GetDataSnapshotSummary(db *sql.DB, snapID string) (string, error) {
+	if snapID == "" {
+		return "", nil
+	}
+	var raw string
+	err := db.QueryRow(`SELECT snapshot_json FROM data_snapshots WHERE id = ?`, snapID).Scan(&raw)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return raw, err
+}

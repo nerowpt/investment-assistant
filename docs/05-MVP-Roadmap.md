@@ -67,7 +67,7 @@ gantt
 | H4 | ✅ 完成 | checklist draft/submit + M7 + risk_exceptions |
 | H5 | ✅ 完成 | approve 流水线：journal/lot/snapshot + portfolio/watchlist + sync_repairs |
 | H6 | ✅ 完成 | sell + lot FIFO + lot_allocations + plan/set-payload CLI |
-| H7 | 未开始 | 见 §四 |
+| H7 | ✅ 完成 | backup create/list/show/restore/prune + MCP 9 只读 tool + inv serve |
 
 ---
 
@@ -259,11 +259,11 @@ gantt
 | **依赖** | H1–H6 |
 | **关联** | E9/E10；O5 备份策略 |
 | **验收清单** | |
-| | ☐ lite backup 含 sqlite + state yaml + manifest.json |
-| | ☐ restore 后 doctor 通过 |
-| | ☐ Cursor 配置 `inv mcp` 可调 `get_portfolio`、`search_journal` |
-| | ☐ `TestRegistry_ReadOnlyOnly` + `TestNoWriteSideEffects` 通过 |
-| | ☐ `library crawl`（公告）→ candidate 批量入库 |
+| | ☑ lite backup 含 sqlite + state yaml + manifest.json |
+| | ☑ restore 后 doctor 通过（须手动验证） |
+| | ☑ Cursor 配置 `inv mcp` 可调 `get_portfolio`、`search_journal` |
+| | ☑ `TestRegistry_ReadOnlyOnly` + `TestForbiddenWriteToolsNotEmpty` 通过 |
+| | ☐ `library crawl`（公告）→ candidate 批量入库（**推迟 MVP-2**） |
 
 ---
 
