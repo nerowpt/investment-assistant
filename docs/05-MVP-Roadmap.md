@@ -68,6 +68,7 @@ gantt
 | H5 | ✅ 完成 | approve 流水线：journal/lot/snapshot + portfolio/watchlist + sync_repairs |
 | H6 | ✅ 完成 | sell + lot FIFO + lot_allocations + plan/set-payload CLI |
 | H7 | ✅ 完成 | backup create/list/show/restore/prune + MCP 9 只读 tool + inv serve |
+| H8 | ✅ 首版完成 | `inv api` HTTP + uni-app 向导（buy/add/sell/inspect） |
 
 ---
 
@@ -301,7 +302,8 @@ gantt
 
 | 里程碑 | 内容 | 工期 | 对应产品 |
 |---|---|---|---|
-| **H8** | Kratos `ia-api` 只读 GET + token 鉴权 | 2–3 周 | Web 壳 / 多端读 |
+| **H8** | Go `cmd/ia-api` + uni-app 向导前端（buy/add/sell/inspect） | 2–3 周 | **进行中** — 本地 HTTP + H5 |
+| **H8b** | Kratos `ia-api` 托管 + token 鉴权 | 2 周 | 服务器/NAS 部署 |
 | **H9** | 叙事信号包六维 + `narrative_signals.yaml` | 3–4 周 | MVP-2A S7 |
 | **H10** | `narrative_stage_assessment` 强拦截 | 1–2 周 | MVP-2A |
 | **H11** | M6 候选池自动扫描 + overseas_peers | 2–3 周 | MVP-2A |

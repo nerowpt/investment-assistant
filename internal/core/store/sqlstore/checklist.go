@@ -142,6 +142,21 @@ func UpdateChecklistSubmitted(db execer, id, riskJSON, exceptionJSON, emotionSel
 	return err
 }
 
+// UpdateChecklistDraft 更新 draft 的标的与 payload（H8 续办向导）。
+func UpdateChecklistDraft(db *sql.DB, id, code, name, payloadJSON string) error {
+	res, err := db.Exec(`
+		UPDATE checklist_submissions SET code = ?, name = ?, payload_json = ?
+		WHERE id = ? AND status = 'draft'`, code, name, payloadJSON, id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("checklist 不存在或非 draft: %s", id)
+	}
+	return nil
+}
+
 // UpdateChecklistRejected 作废 checklist（draft/submitted → rejected）。
 func UpdateChecklistRejected(db *sql.DB, id, payloadJSON string) error {
 	res, err := db.Exec(`

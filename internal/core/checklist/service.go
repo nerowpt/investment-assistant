@@ -92,6 +92,55 @@ func (s *Service) CreateDraft(in DraftInput) (*DraftResult, error) {
 	return &DraftResult{ID: id, Status: "draft"}, nil
 }
 
+// UpdateDraftInput 更新 draft 参数（续办向导）。
+type UpdateDraftInput struct {
+	ID          string
+	Code        string
+	Name        string
+	PayloadJSON string
+	Values      map[string]any // 扁平表单值，与 PayloadJSON 二选一
+}
+
+// UpdateDraft 更新已有 draft 的 payload 与标的（仅 status=draft）。
+func (s *Service) UpdateDraft(in UpdateDraftInput) (*DraftResult, error) {
+	cs, err := sqlstore.GetChecklistSubmission(s.db, in.ID)
+	if err != nil {
+		return nil, err
+	}
+	if cs == nil {
+		return nil, fmt.Errorf("checklist 不存在: %s", in.ID)
+	}
+	if cs.Status != "draft" {
+		return nil, fmt.Errorf("仅 draft 可编辑（当前 status=%s）", cs.Status)
+	}
+	payloadJSON := in.PayloadJSON
+	if payloadJSON == "" && len(in.Values) > 0 {
+		built := BuildPayloadFromFlat(in.Values)
+		b, err := json.Marshal(built)
+		if err != nil {
+			return nil, err
+		}
+		payloadJSON = string(b)
+	}
+	if payloadJSON == "" {
+		payloadJSON = cs.PayloadJSON
+	}
+	if err := ValidateDraftPayload(cs.ChecklistType, payloadJSON); err != nil {
+		return nil, err
+	}
+	code, name := in.Code, in.Name
+	if code == "" {
+		code = cs.Code
+	}
+	if name == "" {
+		name = cs.Name
+	}
+	if err := sqlstore.UpdateChecklistDraft(s.db, in.ID, code, name, payloadJSON); err != nil {
+		return nil, err
+	}
+	return &DraftResult{ID: in.ID, Status: "draft"}, nil
+}
+
 // Submit draft → submitted，运行 M7 并写 risk_exceptions。
 func (s *Service) Submit(in SubmitInput) (*SubmitResult, error) {
 	cs, err := sqlstore.GetChecklistSubmission(s.db, in.ID)
@@ -112,31 +161,7 @@ func (s *Service) Submit(in SubmitInput) (*SubmitResult, error) {
 		return nil, fmt.Errorf("emotion_tag=%s 须二次确认：请用 --emotion-check 填写自检说明", emotionTag)
 	}
 
-	portfolio, _ := yamlstore.LoadPortfolio(s.ac.PortfolioPath())
-	rules, err := yamlstore.LoadRiskRules(s.ac.RiskRulesPath())
-	if err != nil {
-		return nil, fmt.Errorf("读取 risk_rules: %w", err)
-	}
-	redlines, err := yamlstore.LoadPersonalRedlines(s.ac.PersonalRedlinesPath())
-	if err != nil {
-		return nil, fmt.Errorf("读取 personal_redlines: %w", err)
-	}
-	proposed, err := ProposedPct(cs.ChecklistType, cs.PayloadJSON)
-	if err != nil {
-		return nil, err
-	}
-	sectorID, thesisID := risk.SectorThesisFromPortfolio(portfolio, cs.Code)
-	guard, err := risk.Evaluate(risk.EvaluateInput{
-		Scenario:    cs.ChecklistType,
-		Code:        cs.Code,
-		SectorID:    sectorID,
-		ThesisID:    thesisID,
-		ProposedPct: proposed,
-		Portfolio:   portfolio,
-		RiskRules:   rules,
-		Redlines:    redlines,
-		PayloadJSON: cs.PayloadJSON,
-	})
+	guard, err := s.evaluateM7(cs)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +188,79 @@ func (s *Service) Submit(in SubmitInput) (*SubmitResult, error) {
 		HardBlockCount: len(guard.HardBlocks),
 		WarningCount:   len(guard.Warnings),
 	}, nil
+}
+
+// PreviewSubmitResult M7 预览结果（不改变 checklist status，供 H8 向导分步展示）。
+type PreviewSubmitResult struct {
+	ApproveBlocked    bool                   `json:"approve_blocked"`
+	HardBlockCount    int                    `json:"hard_block_count"`
+	WarningCount      int                    `json:"warning_count"`
+	RiskResult        map[string]any         `json:"risk_result"`
+	ExceptionRequired bool                   `json:"exception_required"`
+	EmotionCheckNeeded bool                  `json:"emotion_check_needed"`
+	EmotionTag        string                 `json:"emotion_tag,omitempty"`
+}
+
+// PreviewSubmit 对 draft checklist 运行 M7 预览，不写库。
+func (s *Service) PreviewSubmit(id string) (*PreviewSubmitResult, error) {
+	cs, err := sqlstore.GetChecklistSubmission(s.db, id)
+	if err != nil {
+		return nil, err
+	}
+	if cs == nil {
+		return nil, fmt.Errorf("checklist 不存在: %s", id)
+	}
+	if cs.Status != "draft" {
+		return nil, fmt.Errorf("仅 draft 可预览（当前 status=%s）", cs.Status)
+	}
+	if err := ValidatePayload(s.db, cs.ChecklistType, cs.Code, cs.PayloadJSON); err != nil {
+		return nil, err
+	}
+	guard, err := s.evaluateM7(cs)
+	if err != nil {
+		return nil, err
+	}
+	var riskMap map[string]any
+	raw, _ := guard.ToJSON()
+	_ = json.Unmarshal([]byte(raw), &riskMap)
+	emotionTag := ExtractEmotionTag(cs.PayloadJSON)
+	return &PreviewSubmitResult{
+		ApproveBlocked:     guard.ApproveBlocked,
+		HardBlockCount:     len(guard.HardBlocks),
+		WarningCount:       len(guard.Warnings),
+		RiskResult:         riskMap,
+		ExceptionRequired:  len(guard.HardBlocks) > 0,
+		EmotionCheckNeeded: EmotionNeedsSelfCheck(emotionTag),
+		EmotionTag:         emotionTag,
+	}, nil
+}
+
+func (s *Service) evaluateM7(cs *schema.ChecklistSubmission) (*risk.GuardrailResult, error) {
+	portfolio, _ := yamlstore.LoadPortfolio(s.ac.PortfolioPath())
+	rules, err := yamlstore.LoadRiskRules(s.ac.RiskRulesPath())
+	if err != nil {
+		return nil, fmt.Errorf("读取 risk_rules: %w", err)
+	}
+	redlines, err := yamlstore.LoadPersonalRedlines(s.ac.PersonalRedlinesPath())
+	if err != nil {
+		return nil, fmt.Errorf("读取 personal_redlines: %w", err)
+	}
+	proposed, err := ProposedPct(cs.ChecklistType, cs.PayloadJSON)
+	if err != nil {
+		return nil, err
+	}
+	sectorID, thesisID := risk.SectorThesisFromPortfolio(portfolio, cs.Code)
+	return risk.Evaluate(risk.EvaluateInput{
+		Scenario:    cs.ChecklistType,
+		Code:        cs.Code,
+		SectorID:    sectorID,
+		ThesisID:    thesisID,
+		ProposedPct: proposed,
+		Portfolio:   portfolio,
+		RiskRules:   rules,
+		Redlines:    redlines,
+		PayloadJSON: cs.PayloadJSON,
+	})
 }
 
 // Get 查询单条。

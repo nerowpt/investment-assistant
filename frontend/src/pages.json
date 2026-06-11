@@ -1,0 +1,52 @@
+{
+  "pages": [
+    {
+      "path": "pages/dashboard/index",
+      "style": {
+        "navigationBarTitleText": "投资助手"
+      }
+    },
+    {
+      "path": "pages/research/index",
+      "style": {
+        "navigationBarTitleText": "研究档案"
+      }
+    },
+    {
+      "path": "pages/review/index",
+      "style": {
+        "navigationBarTitleText": "复盘工作台"
+      }
+    },
+    {
+      "path": "pages/pool/index",
+      "style": {
+        "navigationBarTitleText": "选股看板"
+      }
+    },
+    {
+      "path": "pages/wizard/index",
+      "style": {
+        "navigationBarTitleText": "决策向导"
+      }
+    },
+    {
+      "path": "pages/records/index",
+      "style": {
+        "navigationBarTitleText": "决策记录"
+      }
+    },
+    {
+      "path": "pages/records/detail",
+      "style": {
+        "navigationBarTitleText": "记录详情"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "投资助手",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f6f8"
+  }
+}

@@ -35,7 +35,9 @@
 9. [H4-checklist与M7.md](H4-checklist与M7.md)
 10. [H5-checklist-approve.md](H5-checklist-approve.md)
 11. [H6-sell-FIFO.md](H6-sell-FIFO.md)
-12. 后续按 [07 §六](../07-接口与验证手册.md#六功能项索引与状态) 里程碑追加
+12. [H7-backup-MCP.md](H7-backup-MCP.md) · [H8-web-api与前端.md](H8-web-api与前端.md) · [H8.1-选股看板.md](H8.1-选股看板.md) · [H8.2-研究档案.md](H8.2-研究档案.md) · [H8.3-复盘工作台.md](H8.3-复盘工作台.md)
+13. [MVP1-验收跑通.md](MVP1-验收跑通.md)
+14. 后续按 [07 §六](../07-接口与验证手册.md#六功能项索引与状态) 里程碑追加
 
 ## 给协作者
 

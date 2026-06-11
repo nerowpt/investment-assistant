@@ -36,6 +36,7 @@ func NewRoot() *cobra.Command {
 	root.AddCommand(newBackupCmd())
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newServeCmd())
+	root.AddCommand(newAPICmd())
 	return root
 }
 

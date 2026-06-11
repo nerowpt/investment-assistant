@@ -110,6 +110,39 @@ func (s *Service) Ingest(in IngestInput) (*IngestResult, error) {
 	return s.ingestCore(in, "manual")
 }
 
+// QuickAddInput 向导内快速录入 L1 素材（ingest + promote 一步完成）。
+type QuickAddInput struct {
+	Title string // 素材标题
+	Text  string // 正文/摘要
+	Stock string // 关联标的 code
+	Tier  string // 默认 B
+}
+
+// QuickAdd 快速录入并晋升为 active library_item（H8 前端「新增素材」）。
+func (s *Service) QuickAdd(in QuickAddInput) (string, error) {
+	tier := in.Tier
+	if tier == "" {
+		tier = "B"
+	}
+	res, err := s.Ingest(IngestInput{
+		Text:   in.Text,
+		Title:  in.Title,
+		Tier:   tier,
+		Stocks: []string{in.Stock},
+	})
+	if err != nil {
+		return "", err
+	}
+	return s.Promote(PromoteInput{
+		CandidateID: res.CandidateID,
+		ContentType: "note",
+		MediaType:   "text",
+		Tier:        tier,
+		Stocks:      []string{in.Stock},
+		Summary:     in.Text,
+	})
+}
+
 func (s *Service) ingestCore(in IngestInput, sourceEntry string) (*IngestResult, error) {
 	if err := validateIngestCore(in); err != nil {
 		return nil, err

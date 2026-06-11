@@ -16,19 +16,18 @@ import (
 
 const initialMigration = "001_initial.up.sql"
 
-// Open 打开或创建 assistant.sqlite。
+// Open 打开或创建 assistant.sqlite（WAL + busy_timeout，支持 HTTP 并发读）。
 func Open(dbPath string) (*sql.DB, error) {
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return nil, fmt.Errorf("创建 db 目录: %w", err)
 	}
-	db, err := sql.Open("sqlite", dbPath)
+	// busy_timeout 毫秒：并发请求时等待锁释放，而非立即报 locked
+	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)", filepath.ToSlash(dbPath))
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("打开 SQLite: %w", err)
 	}
-	if _, err := db.Exec(`PRAGMA journal_mode=WAL`); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("设置 WAL: %w", err)
-	}
+	db.SetMaxOpenConns(1) // modernc sqlite 单写多读；API 层用连接池复用同一实例
 	return db, nil
 }
 

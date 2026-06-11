@@ -106,16 +106,55 @@ class DataWorkerServicer(dataworker_pb2_grpc.DataWorkerServicer):
         return dataworker_pb2.FetchAnnouncementsResponse(items=items, errors=errors)
 
     def FetchMarketSnapshot(self, request, context):  # noqa: ARG002
-        """MVP-1 简版：返回请求的指数占位（H5 snapshot 可扩展）。"""
-        indices = []
-        for code in request.index_codes:
-            indices.append(
-                dataworker_pb2.IndexSnapshot(code=code, name=code, close=0.0, change_pct=0.0)
+        """指数行情摘要（研究档案·市场基准）。"""
+        codes = list(request.index_codes) or ["000300"]
+        try:
+            data = akshare_quote.fetch_market_snapshot(codes)
+        except Exception as exc:  # noqa: BLE001
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(exc))
+            return dataworker_pb2.FetchMarketSnapshotResponse()
+        p = data["provenance"]
+        indices = [
+            dataworker_pb2.IndexSnapshot(
+                code=it["code"],
+                name=it["name"],
+                close=it["close"],
+                change_pct=it["change_pct"],
             )
+            for it in data["indices"]
+        ]
         return dataworker_pb2.FetchMarketSnapshotResponse(
-            provenance=_prov("akshare", "B"),
+            provenance=_prov(p["source"], p["tier"]),
             indices=indices,
-            summary="market snapshot stub",
+            summary=data.get("summary", ""),
+        )
+
+    def FetchResearchExtended(self, request, context):  # noqa: ARG002
+        """研究档案扩展包：sector_valuation / volume。"""
+        pack = (request.pack or "").strip()
+        code = (request.code or "").strip()
+        try:
+            if pack == "sector_valuation":
+                data = akshare_quote.fetch_sector_valuation(code)
+            elif pack == "volume":
+                data = akshare_quote.fetch_volume_analysis(code)
+            else:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(f"未知 pack: {pack}")
+                return dataworker_pb2.FetchResearchExtendedResponse()
+        except Exception as exc:  # noqa: BLE001
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(exc))
+            return dataworker_pb2.FetchResearchExtendedResponse()
+        p = data["provenance"]
+        return dataworker_pb2.FetchResearchExtendedResponse(
+            provenance=_prov(p["source"], p["tier"]),
+            code=data.get("code", code),
+            stock_name=data.get("stock_name", ""),
+            title=data.get("title", ""),
+            summary=data.get("summary", ""),
+            body=data.get("body", ""),
         )
 
     def ExtractDocument(self, request, context):  # noqa: ARG002

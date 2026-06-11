@@ -128,6 +128,27 @@ type JournalRow struct {
 	CreatedAt             string
 }
 
+// CountSellJournalsByCode 统计各标的卖出 journal 条数（看板「已减仓」提示）。
+func CountSellJournalsByCode(db *sql.DB) (map[string]int, error) {
+	rows, err := db.Query(`SELECT COALESCE(code,''), COUNT(1) FROM journals WHERE action_type = 'sell' GROUP BY code`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var code string
+		var n int
+		if err := rows.Scan(&code, &n); err != nil {
+			return nil, err
+		}
+		if code != "" {
+			out[code] = n
+		}
+	}
+	return out, rows.Err()
+}
+
 // SearchJournals 按标的/动作检索 journal（MCP/CLI 只读）。
 func SearchJournals(db *sql.DB, code, actionType string, limit int) ([]JournalRow, error) {
 	if limit <= 0 || limit > 100 {

@@ -275,10 +275,29 @@ func loadOpenLotsForValidate(db *sql.DB, code string) ([]lot.OpenLot, error) {
 }
 
 func validateReview(raw map[string]any) error {
-	for _, k := range []string{"review_type", "period_start", "period_end", "confirmed_patterns"} {
-		if !hasKey(raw, k) {
-			return fmt.Errorf("review payload 缺少必填字段: %s", k)
+	if !hasKey(raw, "review_type") {
+		return fmt.Errorf("review payload 缺少必填字段: review_type")
+	}
+	reviewType := strings.TrimSpace(fmt.Sprint(raw["review_type"]))
+	if reviewType == "lot_attribution" {
+		for _, k := range []string{"target_lot_id", "target_code", "period_start", "period_end", "confirmed_patterns"} {
+			if !hasKey(raw, k) {
+				return fmt.Errorf("review payload 缺少必填字段: %s", k)
+			}
 		}
+		if att, ok := raw["attribution"].(map[string]any); !ok || !hasKey(att, "result_category") {
+			return fmt.Errorf("review payload 缺少必填字段: attribution.result_category")
+		}
+	} else {
+		for _, k := range []string{"period_start", "period_end", "confirmed_patterns"} {
+			if !hasKey(raw, k) {
+				return fmt.Errorf("review payload 缺少必填字段: %s", k)
+			}
+		}
+	}
+	patterns, ok := raw["confirmed_patterns"].([]any)
+	if !ok || len(patterns) == 0 {
+		return fmt.Errorf("confirmed_patterns 至少 1 项")
 	}
 	return nil
 }

@@ -21,6 +21,8 @@ service DataWorker {
   rpc FetchMarketSnapshot(FetchMarketSnapshotRequest) returns (FetchMarketSnapshotResponse);
   // URL/文件/文本抽取；library ingest 预处理
   rpc ExtractDocument(ExtractDocumentRequest) returns (ExtractDocumentResponse);
+  // 研究档案扩展包（板块估值、成交量分析等）
+  rpc FetchResearchExtended(FetchResearchExtendedRequest) returns (FetchResearchExtendedResponse);
 }
 
 message HealthCheckRequest {}
@@ -131,4 +133,20 @@ message ExtractDocumentResponse {
   int32 char_count = 5;
   repeated common.v1.StockRef related_stocks = 6;
   map<string, string> meta = 7; // 如 author、publish_date
+}
+
+// FetchResearchExtendedRequest 研究档案扩展拉取（H8.2）。
+message FetchResearchExtendedRequest {
+  string code = 1;
+  string pack = 2; // sector_valuation | volume
+}
+
+// FetchResearchExtendedResponse 扩展包事实文本（不下买卖结论）。
+message FetchResearchExtendedResponse {
+  common.v1.Provenance provenance = 1;
+  string code = 2;
+  string stock_name = 3; // 股票简称，供前端展示
+  string title = 4;
+  string summary = 5;
+  string body = 6;
 }

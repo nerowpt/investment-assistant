@@ -1,0 +1,23 @@
+{
+  "name": "投资助手",
+  "appid": "__UNI__INVESTMENT_ASSISTANT",
+  "description": "个人投资决策助手 H8 前端",
+  "versionName": "0.1.0-h8",
+  "versionCode": "100",
+  "transformPx": false,
+  "h5": {
+    "title": "投资助手",
+    "router": {
+      "mode": "hash"
+    },
+    "devServer": {
+      "port": 5173
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    }
+  }
+}
